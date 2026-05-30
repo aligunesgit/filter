@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<!-- saved from url=(0097)file:///Users/aligunes/Documents/Codex/2026-05-30/selam/outputs/filtering-process-simulation.html -->
+<html lang="tr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Filtrasyon Simülasyonu</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: #0b3a6c;
+      overflow: hidden;
+    }
+
+    .page {
+      width: min(1090px, 100vw);
+      margin: 0 auto;
+      background: #0b3a6c;
+    }
+
+    .diagram {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1090 / 586;
+      overflow: hidden;
+      background: #0b3a6c;
+    }
+
+    .base,
+    .overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .base {
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .overlay {
+      pointer-events: none;
+    }
+
+    .title {
+      fill: #ffffff;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 36px;
+      font-weight: 300;
+      letter-spacing: 0;
+      paint-order: stroke;
+      stroke: rgba(0, 55, 120, .32);
+      stroke-width: 2px;
+    }
+
+    .label {
+      fill: #ffffff;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: .01em;
+      paint-order: stroke;
+      stroke: rgba(0, 55, 120, .38);
+      stroke-width: 2.5px;
+      stroke-linejoin: round;
+    }
+
+    .leader {
+      fill: none;
+      stroke: #d8f4ff;
+      stroke-width: 2.1;
+      stroke-linecap: square;
+      stroke-linejoin: round;
+      opacity: .95;
+    }
+
+    .flow {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 16 76;
+      animation: run 1.55s linear infinite;
+    }
+
+    .flow.dirty {
+      stroke: #ffe66a;
+      stroke-width: 8;
+      opacity: .58;
+    }
+
+    .flow.clean {
+      stroke: #aaf6ff;
+      stroke-width: 7;
+      opacity: .55;
+      animation-duration: 1.35s;
+    }
+
+    .flow.white {
+      stroke: #ffffff;
+      stroke-width: 6;
+      opacity: .48;
+      animation-duration: 1.75s;
+    }
+
+    .flow.sludge {
+      stroke: #b58a34;
+      stroke-width: 8;
+      opacity: .62;
+      animation-duration: 1.9s;
+    }
+
+    .pump-ring {
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 3;
+      opacity: .75;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pump 1.2s ease-out infinite;
+    }
+
+    .filter-line {
+      stroke: #fff6a9;
+      stroke-width: 3;
+      stroke-linecap: round;
+      opacity: .72;
+      animation: blink .9s ease-in-out infinite alternate;
+    }
+
+    .gauge-hand {
+      stroke: #ffffff;
+      stroke-width: 2.3;
+      stroke-linecap: round;
+      transform-box: fill-box;
+      transform-origin: center bottom;
+      animation: swing 1.8s ease-in-out infinite alternate;
+    }
+
+    .valve {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: valve 1.35s ease-in-out infinite alternate;
+    }
+
+    .particle {
+      fill: #6d4d1f;
+      opacity: .78;
+      filter: drop-shadow(0 0 1px rgba(255,255,255,.55));
+    }
+
+    .particle.clean {
+      fill: #9df5ff;
+    }
+
+    .particle.sludge {
+      fill: #7a5722;
+    }
+
+    .bubble {
+      fill: #bff8ff;
+      opacity: .75;
+      animation: bubble 1.9s ease-in infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .process-caption {
+      height: 106px;
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      padding: 0 40px;
+      color: #fff;
+      background: #0b3a6c;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    .process-caption .badge {
+      flex: 0 0 auto;
+      width: 150px;
+    }
+
+    .process-caption .group {
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      opacity: .7;
+      font-weight: 600;
+    }
+
+    .process-caption .step {
+      font-size: 34px;
+      font-weight: 300;
+      line-height: 1;
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .process-caption .step small {
+      font-size: 15px;
+      opacity: .55;
+    }
+
+    .process-caption .text {
+      flex: 1;
+      font-size: 17px;
+      line-height: 1.35;
+      font-weight: 400;
+      max-width: 740px;
+      text-wrap: pretty;
+    }
+
+    .process-caption .text b {
+      font-weight: 700;
+    }
+
+    @keyframes run {
+      to { stroke-dashoffset: -92; }
+    }
+
+    @keyframes pump {
+      0% { opacity: .75; transform: scale(.78); }
+      100% { opacity: 0; transform: scale(1.75); }
+    }
+
+    @keyframes blink {
+      from { opacity: .25; }
+      to { opacity: .9; }
+    }
+
+    @keyframes swing {
+      from { transform: rotate(-28deg); }
+      to { transform: rotate(32deg); }
+    }
+
+    @keyframes valve {
+      from { transform: scale(.9) rotate(-8deg); opacity: .8; }
+      to { transform: scale(1.08) rotate(8deg); opacity: 1; }
+    }
+
+    @keyframes bubble {
+      0% { opacity: 0; transform: translateY(10px) scale(.65); }
+      25% { opacity: .85; }
+      100% { opacity: 0; transform: translateY(-38px) scale(1.05); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="diagram" aria-label="Filtrasyon sistemi simülasyonu">
+      <img class="base" src="./Filtrasyon Simülasyonu_files/filtering-clean.png" alt="Filtrasyon sistemi teknik çizimi">
+      <svg class="overlay" viewBox="0 0 1090 586" aria-hidden="true">
+        <defs>
+          <path id="dirtyPath" d="M257 486 V222 Q257 208 272 208 H302 Q310 208 310 224 Q310 247 333 247 H366"></path>
+          <path id="cleanPath" d="M371 374 H696 Q710 374 710 388 V489"></path>
+          <path id="whitePath" d="M333 342 H314 Q303 342 303 354 V389 H628 Q647 389 647 408 V488"></path>
+          <path id="sludgePath" d="M415 444 V510 H298"></path>
+          <path id="dischargePath" d="M690 405 H708 Q724 405 724 421 V488"></path>
+          <path id="beltPath" d="M347 238 V346"></path>
+        </defs>
+
+        <path class="flow dirty" d="M257 486 V222 Q257 208 272 208 H302 Q310 208 310 224 Q310 247 333 247 H366"></path>
+        <path class="flow clean" d="M371 374 H696 Q710 374 710 388 V489"></path>
+        <path class="flow white" d="M333 342 H314 Q303 342 303 354 V389 H628 Q647 389 647 408 V488"></path>
+        <path class="flow sludge" d="M415 444 V510 H298"></path>
+        <path class="flow clean" d="M690 405 H708 Q724 405 724 421 V488"></path>
+        <path class="flow clean" d="M783 488 V414 Q783 397 800 397 H817"></path>
+
+        <circle class="pump-ring" cx="256" cy="443" r="15"></circle>
+        <circle class="pump-ring" cx="609" cy="445" r="15"></circle>
+        <circle class="pump-ring" cx="743" cy="446" r="15"></circle>
+        <circle class="pump-ring" cx="784" cy="446" r="15"></circle>
+
+        <line class="filter-line" x1="354" y1="248" x2="354" y2="336"></line>
+        <line class="filter-line" x1="377" y1="248" x2="377" y2="354"></line>
+        <line class="filter-line" x1="255" y1="238" x2="255" y2="282"></line>
+        <line class="filter-line" x1="607" y1="455" x2="607" y2="486"></line>
+        <line class="filter-line" x1="710" y1="435" x2="710" y2="489"></line>
+
+        <g class="valve">
+          <path d="M318 240 L337 250 L318 260 Z" fill="#31c471"></path>
+          <path d="M337 240 L318 250 L337 260 Z" fill="#e8fff2"></path>
+        </g>
+        <g class="valve">
+          <path d="M319 331 L337 341 L319 351 Z" fill="#f2242e"></path>
+          <path d="M337 331 L319 341 L337 351 Z" fill="#ffffff"></path>
+        </g>
+        <g class="valve">
+          <path d="M681 393 L701 404 L681 415 Z" fill="#31c471"></path>
+          <path d="M701 393 L681 404 L701 415 Z" fill="#e8fff2"></path>
+        </g>
+
+        <line class="gauge-hand" x1="356" y1="157" x2="356" y2="139"></line>
+        <line class="gauge-hand" x1="481" y1="154" x2="481" y2="136"></line>
+        <line class="gauge-hand" x1="606" y1="154" x2="606" y2="136"></line>
+
+        <circle class="particle" r="2.2">
+          <animatemotion dur="3.6s" repeatCount="indefinite"><mpath href="#dirtyPath"></mpath></animatemotion>
+        </circle>
+        <circle class="particle clean" r="2">
+          <animatemotion dur="3.9s" begin=".55s" repeatCount="indefinite"><mpath href="#whitePath"></mpath></animatemotion>
+        </circle>
+        <circle class="particle sludge" r="2.1">
+          <animatemotion dur="2.8s" begin=".8s" repeatCount="indefinite"><mpath href="#sludgePath"></mpath></animatemotion>
+        </circle>
+        <circle class="particle clean" r="2">
+          <animatemotion dur="3.2s" begin="1.2s" repeatCount="indefinite"><mpath href="#cleanPath"></mpath></animatemotion>
+        </circle>
+        <circle class="particle clean" r="2">
+          <animatemotion dur="3.4s" begin=".35s" repeatCount="indefinite"><mpath href="#dischargePath"></mpath></animatemotion>
+        </circle>
+
+        <circle class="bubble" cx="705" cy="478" r="4"></circle>
+        <circle class="bubble" cx="724" cy="474" r="3.5" style="animation-delay:.35s"></circle>
+        <circle class="bubble" cx="783" cy="476" r="4" style="animation-delay:.7s"></circle>
+        <circle class="bubble" cx="256" cy="482" r="3.5" style="animation-delay:.25s"></circle>
+
+        <path class="leader" d="M203 138 L332 153"></path>
+        <path class="leader" d="M111 194 L318 229"></path>
+        <path class="leader" d="M131 249 H319"></path>
+        <path class="leader" d="M130 273 H354"></path>
+        <path class="leader" d="M120 311 L320 341"></path>
+        <path class="leader" d="M145 410 L256 443"></path>
+        <path class="leader" d="M101 500 H236"></path>
+        <path class="leader" d="M454 451 L416 462"></path>
+        <path class="leader" d="M561 509 L608 497"></path>
+        <path class="leader" d="M852 306 L704 385"></path>
+        <path class="leader" d="M851 355 L742 404"></path>
+        <path class="leader" d="M851 405 L785 411"></path>
+        <path class="leader" d="M851 445 H784"></path>
+        <path class="leader" d="M851 506 H813"></path>
+
+        <text class="title" x="36" y="82">Filtrasyon</text>
+
+        <text class="label" x="34" y="138">Diferansiyel basınç</text>
+        <text class="label" x="34" y="158">şalteri (ayarlı)</text>
+        <text class="label" x="34" y="198">Filtre kabı</text>
+        <text class="label" x="34" y="254">Besleme vanası</text>
+        <text class="label" x="34" y="278">Filtre elemanı</text>
+        <text class="label" x="34" y="319">Tahliye vanası</text>
+        <text class="label" x="34" y="407">Frekans kontrollü</text>
+        <text class="label" x="34" y="427">filtre pompası</text>
+        <text class="label" x="34" y="504">Kirli tank</text>
+
+        <text class="label" x="463" y="452">Otomatik</text>
+        <text class="label" x="463" y="472">yoğunlaştırıcı</text>
+        <text class="label" x="463" y="516">Çamur tankı</text>
+
+        <text class="label" x="861" y="306">Boşaltma vanası</text>
+        <text class="label" x="861" y="355">Soğutucu ünite /</text>
+        <text class="label" x="861" y="375">sürekli soğutucu</text>
+        <text class="label" x="861" y="412">Yıkama pompası</text>
+        <text class="label" x="861" y="452">Besleme pompa(lar)ı</text>
+        <text class="label" x="861" y="511">Temiz tank</text>
+      </svg>
+    </section>
+    <div class="process-caption" data-caption data-steps='[
+      "Filtre pompası, kirli soğutma yağını <b>filtre gövdesine</b> teğetsel olarak iletir.",
+      "Merkezkaç kuvveti, büyük katı maddeleri <b>gövde duvarında</b> biriktirir.",
+      "Soğutma yağı, filtre elemanlarından <b>dışarıdan içeriye</b> akar.",
+      "Filtre elemanı yüzeyinde <b>filtre keki</b> oluşur ve derin yatak filtresi gibi çalışır.",
+      "Süzülen soğutma yağı, <b>temiz tanka</b> geçer."
+    ]'>
+      <div class="badge">
+        <div class="group">Filtrasyon süreci</div>
+        <div class="step">01<small>/05</small></div>
+      </div>
+      <div class="text">Filtre pompası, kirli soğutma yağını <b>filtre gövdesine</b> teğetsel olarak iletir.</div>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      const caption = document.querySelector('[data-caption]');
+      const steps = JSON.parse(caption.dataset.steps);
+      const step = caption.querySelector('.step');
+      const text = caption.querySelector('.text');
+      let index = 0;
+
+      function render() {
+        step.innerHTML = String(index + 1).padStart(2, '0') + '<small>/' + String(steps.length).padStart(2, '0') + '</small>';
+        text.innerHTML = steps[index];
+        index = (index + 1) % steps.length;
+      }
+
+      render();
+      setInterval(render, 4600);
+    })();
+  </script>
+
+</body></html>

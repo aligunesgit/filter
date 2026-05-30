@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Gravity Belt Filter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0c3a6b;display:flex;flex-direction:column;align-items:center;padding:16px;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;overflow:hidden}
+canvas{display:block;width:100%;max-width:1000px;border-radius:4px}
+.process-caption{width:100%;max-width:1000px;height:106px;display:flex;align-items:center;gap:26px;padding:0 40px;color:#fff;background:#0b3a6c;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+.process-caption .badge{flex:0 0 auto;width:150px}
+.process-caption .group{font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.7;font-weight:600}
+.process-caption .step{font-size:34px;font-weight:300;line-height:1;margin-top:4px;font-variant-numeric:tabular-nums}
+.process-caption .step small{font-size:15px;opacity:.55}
+.process-caption .text{flex:1;font-size:17px;line-height:1.35;font-weight:400;max-width:740px;text-wrap:pretty}
+.process-caption .text b{font-weight:700}
+.ctrl{display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+button{background:#082e52;border:1.5px solid #48a0cc;color:#b8e0ff;padding:6px 16px;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:1px}
+button:hover{background:#155a8a}
+#stat{font-size:11px;color:#ffd060;letter-spacing:1px;margin-left:6px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="process-caption" data-caption data-steps='[
+  "Kirlenmiş sıvı, <b>giriş kutusundan</b> filtre teknesine akar.",
+  "<b>Filtre fleesi</b>, akış sırasında kirletici parçacıkları tutar.",
+  "Kirletici parçacıklar, küçük parçacıkları da ayıran bir <b>filtre keki</b> oluşturur.",
+  "Süzülmüş sıvı, <b>süzülmüş sıvı tankına</b> toplanır."
+]'>
+  <div class="badge">
+    <div class="group">Filtrasyon süreci</div>
+    <div class="step">01<small>/04</small></div>
+  </div>
+  <div class="text">Kirlenmiş sıvı, <b>giriş kutusundan</b> filtre teknesine akar.</div>
+</div>
+
+<script>
+const processCaption=document.querySelector('[data-caption]');
+const processSteps=JSON.parse(processCaption.dataset.steps);
+const processStep=processCaption.querySelector('.step');
+const processText=processCaption.querySelector('.text');
+let processIndex=0;
+function renderProcessCaption(){
+  processStep.innerHTML=String(processIndex+1).padStart(2,'0')+'<small>/'+String(processSteps.length).padStart(2,'0')+'</small>';
+  processText.innerHTML=processSteps[processIndex];
+  processIndex=(processIndex+1)%processSteps.length;
+}
+renderProcessCaption();
+setInterval(renderProcessCaption,4600);
+
+const cv=document.getElementById('c');
+const g=cv.getContext('2d');
+let W,H,sc,playing=true,regen=false,regenT=0;
+let tick=0,cake=0,bph=0,drops=[],sdrips=[];
+
+function resize(){
+  W=Math.min(cv.offsetWidth,1000);
+  H=Math.round(W*0.6);
+  cv.width=W; cv.height=H;
+}
+resize(); window.addEventListener('resize',resize);
+
+function togglePlay(){playing=!playing;}
+function doRegen(){
+  // Manuel tetikleme — cake yeterliyse
+  if(cake>5 && !regen){
+    regen=true; regenT=300;
+    document.getElementById('stat').textContent='● REJENERASYON';
+    document.getElementById('stat').style.color='#ff9944';
+  }
+}
+
+function rr(x,y,w,h,r,fill,stroke,sw){
+  g.beginPath();g.roundRect(x,y,w,h,r||0);
+  if(fill){g.fillStyle=fill;g.fill();}
+  if(stroke){g.strokeStyle=stroke;g.lineWidth=sw||1;g.stroke();}
+}
+function circ(x,y,r,fill,stroke,sw){
+  g.beginPath();g.arc(x,y,r,0,Math.PI*2);
+  if(fill){g.fillStyle=fill;g.fill();}
+  if(stroke){g.strokeStyle=stroke;g.lineWidth=sw||1;g.stroke();}
+}
+function txt(s,x,y,col,sz,align,bold){
+  g.fillStyle=col||'#fff';
+  g.font=`${sz||15}px "Helvetica Neue",Helvetica,Arial,sans-serif`;
+  g.textAlign=align||'left';g.fillText(s,x,y);g.textAlign='left';
+}
+function wl(x1,y1,x2,y2){
+  g.strokeStyle='rgba(255,255,255,0.85)';g.lineWidth=1.2;
+  g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();
+}
+
+function roller(x,y,r,spd,num){
+  circ(x,y,r,'#9aa8b5','#7888a0',1.5);
+  circ(x,y,r*0.65,'#b8c4cc');
+  g.save();g.translate(x,y);g.rotate(tick*spd*(regen?3:1));
+  g.strokeStyle='#606c78';g.lineWidth=1.2;
+  for(let i=0;i<6;i++){const a=i*Math.PI/3;g.beginPath();g.moveTo(0,0);g.lineTo(Math.cos(a)*(r-2),Math.sin(a)*(r-2));g.stroke();}
+  g.restore();
+  if(num){txt(num,x-4,y+5,'#fff',11,'left',true);}
+}
+
+function draw(){
+  g.clearRect(0,0,W,H);
+  sc=W/1000; g.save(); g.scale(sc,sc);
+  g.fillStyle='#0c3a6b';g.fillRect(0,0,1000,600);
+
+  // cake & regen logic
+  if(!regen && cake<40) cake+=0.012;
+
+  // Cake max seviyeye ulaşınca otomatik rejenerasyon başlar
+  if(!regen && cake>=40){
+    regen=true; regenT=300;
+    document.getElementById('stat').textContent='● OTOMATİK REJENERASYON';
+    document.getElementById('stat').style.color='#ff9944';
+  }
+
+  if(regen){
+    cake=Math.max(0,cake-0.18);
+    regenT--;
+    bph=(bph+3)%200; // belt sadece regen'de hareket eder
+    if(regenT<=0){
+      regen=false;
+      cake=0;
+      document.getElementById('stat').textContent='● FİLTRASYON';
+      document.getElementById('stat').style.color='#ffd060';
+    }
+  }
+  // Filtrasyon fazında bph sabit — hareket yok
+
+  /* ═══════════════════════════════════════════════════
+     LAYOUT — süreç adımlarına göre
+     
+     FLEECE REEL BOX: x=60,y=60, w=200,h=220
+     FILTER TROUGH: x=310,y=100, w=200,h=180 (trapez)
+     
+     CARRIER BELT: sağdan sola (üst yüzey)
+     Sol makara (4): x=130, y=340   — büyük
+     Sağ makara (5): x=830, y=340   — büyük, M üstünde
+     Üst belt: y=325 (fleece üstünde sağdan sola)
+     Alt belt dönüş: y=358 (soldan sağa)
+     
+     CLEAN TANK: x=80,y=400, w=750,h=160
+     SLUDGE: x=850,y=360, w=100,h=180
+  ═══════════════════════════════════════════════════ */
+
+  const BELT_TOP = 280;  // carrier belt üst yüzeyi y
+  const BELT_BOT = 313;  // carrier belt alt dönüş y
+  const M4x=130, M4y=295, M4r=22; // sol büyük makara (4)
+  const M5x=830, M5y=295, M5r=22; // sağ büyük makara (5)
+
+  // ── PLATFORM (gri zemin) ──
+  rr(M4x-M4r, BELT_TOP-5, M5x-M4x+M4r*2+M5r, 80, 0,'#c8d4dc','#b0bec8',1);
+
+  // ── FLEECE REEL BOX ──
+  rr(60,60,200,220,3,'#d8e2ea','#b0bec8',1.5);
+
+  // Büyük reel
+  const FRX=155, FRY=165, maxR=70;
+  g.save();
+  g.beginPath();g.rect(62,62,196,216);g.clip();
+  for(let i=7;i>=0;i--){
+    g.beginPath();g.arc(FRX,FRY,12+i*(maxR/8),0,Math.PI*2);
+    g.strokeStyle=`rgba(60,175,180,${0.12+i*0.1})`;g.lineWidth=2.2;g.stroke();
+  }
+  g.save();g.translate(FRX,FRY);g.rotate(-tick*0.011);
+  for(let i=0;i<7;i++){
+    g.beginPath();g.arc(0,0,10+i*(maxR/8),-0.25,Math.PI*1.95);
+    g.strokeStyle=`rgba(50,168,175,${0.28+i*0.1})`;g.lineWidth=2.2;g.stroke();
+  }
+  g.restore();g.restore();
+  circ(FRX,FRY,18,'#e8eef4','#c8d4dc',1.5);
+  circ(FRX,FRY,7,'#d8e2ea');
+
+  // Reel sağındaki 2 küçük roller (1 ve 2)
+  const SR1x=240,SR1y=145; // roller 1 (üst)
+  const SR2x=240,SR2y=205; // roller 2 (alt)
+  roller(SR1x,SR1y,11, 0.03,'1');
+  roller(SR2x,SR2y,11, 0.03,'2');
+
+  // Roller 3 (fleece çıkış, küçük)
+  const SR3x=100,SR3y=BELT_TOP;
+  roller(SR3x,SR3y,11, 0.025,'3');
+
+  // ── FLEECE BANDI (reel → 1'in sağından → 2'nin sağından → 3'ün solundan → belt üstü) ──
+  g.strokeStyle='#5ab8c0';g.lineWidth=3;g.lineCap='round';g.lineJoin='round';
+  g.beginPath();
+  // Reel sağ üstünden → roller 1 sağ üstüne
+  g.moveTo(FRX+38,FRY-18);
+  // Roller 1 sağından düz aşağı
+  g.lineTo(SR1x+11,SR1y-5);
+  g.arc(SR1x,SR1y,11,0,Math.PI*0.5,false); // 1'in sağından altına
+  // Roller 2 sağından
+  g.lineTo(SR2x+11,SR2y-5);
+  g.arc(SR2x,SR2y,11,0,Math.PI*0.5,false); // 2'nin sağından altına
+  // Roller 3'ün soluna
+  g.lineTo(SR3x-11,SR3y+5);
+  g.arc(SR3x,SR3y,11,Math.PI*0.5,Math.PI,false); // 3'ün altından soluna
+  g.stroke();
+
+  // ── FILTER TROUGH ──
+  const FTx=310,FTy=95,FTw=210,FTh=BELT_TOP-FTy-5;
+  const centerX=FTx+FTw/2;
+
+  // Dış çerçeve (dashed)
+  g.save();g.strokeStyle='rgba(180,190,200,0.9)';g.lineWidth=1.5;g.setLineDash([6,4]);
+  rr(FTx,FTy,FTw,FTh,2,null,'rgba(180,190,200,0.9)',1.5);
+  g.setLineDash([]);g.restore();
+
+  // İç arka plan (açık gri/beyaz)
+  rr(FTx+2,FTy+2,FTw-4,FTh-4,1,'rgba(225,232,238,0.8)');
+
+  // Kirli yağ — sol alt köşede küçük boşluk kalıyor
+  const fmX=FTx+FTw-28;
+  const fmW=20;
+  g.beginPath();
+  g.moveTo(FTx+3, FTy+3);              // sol üst köşe
+  g.lineTo(FTx+FTw-3, FTy+3);          // sağ üst köşe
+  g.lineTo(FTx+FTw-3, FTy+FTh-3);      // sağ alt köşe
+  g.lineTo(FTx+FTw*0.25, FTy+FTh-3);   // sol alta yakın (boşluk küçük)
+  g.closePath();
+  const dg=g.createLinearGradient(FTx+FTw-3, FTy+3, FTx+3, FTy+FTh-3);
+  dg.addColorStop(0,'rgba(215,185,65,0.15)');
+  dg.addColorStop(0.4,'rgba(200,165,35,0.65)');
+  dg.addColorStop(1,'rgba(160,120,8,1.0)');
+  g.fillStyle=dg; g.fill();
+
+  // Alt dashed çizgi
+  g.save();g.strokeStyle='rgba(100,105,110,0.75)';g.lineWidth=1.2;g.setLineDash([5,4]);
+  g.beginPath();g.moveTo(FTx+4,FTy+FTh);g.lineTo(FTx+FTw-4,FTy+FTh);g.stroke();
+  g.setLineDash([]);g.restore();
+  // + işareti (sağ alt)
+  const plusX=FTx+FTw-18, plusY=FTy+FTh+1;
+  g.strokeStyle='rgba(80,80,80,0.85)';g.lineWidth=1.5;
+  g.beginPath();g.moveTo(plusX-4,plusY);g.lineTo(plusX+4,plusY);g.stroke();
+  g.beginPath();g.moveTo(plusX,plusY-4);g.lineTo(plusX,plusY+4);g.stroke();
+
+  // ── FROM MACHINE BORU — SAĞDA, trough içine giriyor ──
+  const fmTop=28, fmBot=FTy+FTh-4;
+  // Boru gövdesi
+  rr(fmX-fmW/2, fmTop, fmW, fmBot-fmTop, 1,'#c8a018','#a08010',1.5);
+  // 2 beyaz aşağı ok (animasyonlu)
+  g.save();
+  g.strokeStyle='rgba(255,255,255,0.9)';g.lineWidth=2.5;
+  g.setLineDash([8,6]);g.lineDashOffset=-(tick*2)%14;
+  g.beginPath();g.moveTo(fmX-3,fmTop+8);g.lineTo(fmX-3,fmBot-18);g.stroke();
+  g.beginPath();g.moveTo(fmX+3,fmTop+8);g.lineTo(fmX+3,fmBot-18);g.stroke();
+  g.setLineDash([]);g.restore();
+  // Ok başları (2 ayrı)
+  g.fillStyle='rgba(255,255,255,0.95)';
+  g.beginPath();g.moveTo(fmX-7,fmBot-26);g.lineTo(fmX,fmBot-26);g.lineTo(fmX-3,fmBot-15);g.closePath();g.fill();
+  g.beginPath();g.moveTo(fmX,fmBot-26);g.lineTo(fmX+7,fmBot-26);g.lineTo(fmX+3,fmBot-15);g.closePath();g.fill();
+
+  // ── CARRIER BELT (sarı, üst yüzey: M4'ten M5'e) ──
+  // Üst fleece yüzeyi
+  g.fillStyle=regen?'#c07818':'#c8a830';
+  g.fillRect(M4x,BELT_TOP-12,M5x-M4x,10);
+  g.strokeStyle=regen?'#a06010':'#a89020';g.lineWidth=0.8;
+  g.strokeRect(M4x,BELT_TOP-12,M5x-M4x,10);
+
+  // Belt üstü cake — alttan koyu kahve, üstten şeffaf açık kahve gradient
+  if(cake>1){
+    const cakeGr=g.createLinearGradient(0,BELT_TOP-12-cake,0,BELT_TOP-12);
+    cakeGr.addColorStop(0,'rgba(200,150,80,0.15)');   // üst — çok şeffaf
+    cakeGr.addColorStop(0.35,'rgba(160,100,40,0.55)'); // orta üst
+    cakeGr.addColorStop(0.7,'rgba(80,35,12,0.9)');     // orta alt
+    cakeGr.addColorStop(1,'rgba(30,10,2,1.0)');         // alt — tam koyu
+    g.fillStyle=cakeGr;
+    g.fillRect(M4x+10,BELT_TOP-12-cake,M5x-M4x-20,cake);
+    g.strokeStyle='rgba(120,75,25,0.3)';
+    g.lineWidth=1;
+    g.strokeRect(M4x+10,BELT_TOP-12-cake,M5x-M4x-20,cake);
+  }
+
+  // Belt animasyon (üst: soldan sağa)
+  g.save();
+  g.strokeStyle=regen?'rgba(255,200,80,0.5)':'rgba(255,240,120,0.45)';
+  g.lineWidth=2;g.setLineDash([14,12]);
+  g.lineDashOffset=bph;
+  g.beginPath();g.moveTo(M4x,BELT_TOP-7);g.lineTo(M5x,BELT_TOP-7);g.stroke();
+  g.setLineDash([]);g.restore();
+
+  // ── MAKARALAR — hepsi aynı yön (saat yönü = soldan sağa) ──
+  // 4 — sol büyük makara
+  roller(M4x,M4y,M4r, 0.02,'4');
+  // 5 — sağ büyük makara
+  roller(M5x,M5y,M5r, 0.02,'5');
+  // 6 — M (sağ üst, belt drive)
+  const M6x=M5x,M6y=BELT_TOP-M5r+2;
+  roller(M6x,M6y,15, 0.025);
+  circ(M6x,M6y-28,13,'#1a4a7a','#4a8aba',1.5);
+  txt('M',M6x,M6y-23,'#a0d0ff',10,'center');
+  txt('6',M6x-4,M6y+4,'#fff',9);
+
+  // ── ALT DÖNÜŞ BANDI ──
+  // 4'ün sol yarısını sar → düz git → 5'in SAĞ yarısını sar
+  g.save();
+  g.strokeStyle='#1a1a1a';g.lineWidth=2;g.setLineDash([10,6]);
+  if(regen) g.lineDashOffset=bph; // regen'de hareket eder
+  g.beginPath();
+  g.arc(M4x,M4y,M4r, -Math.PI*0.5, Math.PI*0.5, true);
+  g.lineTo(M5x,M5y+M5r);
+  g.arc(M5x,M5y,M5r, Math.PI*0.5, -Math.PI*0.5, true);
+  g.stroke();
+  g.setLineDash([]);g.restore();
+
+  // Belt animasyon alt dönüş (soldan sağa)
+  g.save();
+  g.strokeStyle='rgba(50,50,50,0.4)';g.lineWidth=1;g.setLineDash([10,6]);
+  g.lineDashOffset=bph; // ters yön
+  g.beginPath();g.moveTo(M4x,M4y+M4r-2);g.lineTo(M5x,M5y+M5r-2);g.stroke();
+  g.setLineDash([]);g.restore();
+
+  // ── TO MACHINE BORU — ince, çift kenarlı, içinde 2 beyaz yukarı ok ──
+  const pX=38;
+  const pTop=195, pBot=500; // tank alt kenarı 355+155=510
+  const pW=14; // boru genişliği
+
+  // Boru dış gövde (açık mavi)
+  rr(pX-pW/2, pTop, pW, pBot-pTop, 1, '#78c8e8', '#5aaace', 1.2);
+
+  // Boru iç (biraz daha koyu, ortada)
+  rr(pX-pW/2+2, pTop+2, pW-4, pBot-pTop-4, 0, '#a8dff0');
+
+  // 2 beyaz yukarı ok animasyonu
+  g.save();
+  g.strokeStyle='rgba(255,255,255,0.9)'; g.lineWidth=1.8;
+  g.setLineDash([6,6]); g.lineDashOffset=(tick*2)%12;
+  g.beginPath(); g.moveTo(pX-3, pBot-20); g.lineTo(pX-3, pTop+20); g.stroke();
+  g.beginPath(); g.moveTo(pX+3, pBot-20); g.lineTo(pX+3, pTop+20); g.stroke();
+  g.setLineDash([]); g.restore();
+
+  // Üst ok başları (2 adet, yukarı)
+  g.fillStyle='rgba(255,255,255,0.95)';
+  g.beginPath(); g.moveTo(pX-7,pTop+28); g.lineTo(pX,pTop+28); g.lineTo(pX-3,pTop+16); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(pX,pTop+28); g.lineTo(pX+7,pTop+28); g.lineTo(pX+3,pTop+16); g.closePath(); g.fill();
+
+  // Alt ok başları (2 adet, yukarı — tank içinde)
+  g.beginPath(); g.moveTo(pX-7,pTop+52); g.lineTo(pX,pTop+52); g.lineTo(pX-3,pTop+40); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(pX,pTop+52); g.lineTo(pX+7,pTop+52); g.lineTo(pX+3,pTop+40); g.closePath(); g.fill();
+
+  // Level monitoring — çubuklar tank üstünden başlıyor, içine uzanıyor
+  const lvX=60;
+  rr(lvX,   310, 6, 195, 2,'#7888a0','#9aaac0',1);
+  rr(lvX+18, 310, 5, 195, 2,'#7888a0','#9aaac0',1);
+  // Float toplar — tank üstünün hemen üzerinde
+  g.save();
+  g.fillStyle='#8898b0';g.strokeStyle='#aabbc8';g.lineWidth=1.5;
+  // Diamond top (büyük, ana çubukta)
+  g.beginPath();
+  g.moveTo(lvX+3,318);g.lineTo(lvX+14,333);g.lineTo(lvX+3,348);g.lineTo(lvX-8,333);
+  g.closePath();g.fill();g.stroke();
+  g.restore();
+  // Küçük yuvarlak top (2. çubukta)
+  circ(lvX+21, 340, 9,'#8898b0','#aabbc8',1.5);
+
+  // ── CLEAN TANK ──
+  const TKx=20,TKy=355,TKw=810,TKh=155;
+  rr(TKx,TKy,TKw,TKh,2,'#2070b8','#3888cc',1.5);
+  // Üst beyaz bant (görseldeki gibi)
+  rr(TKx+2,TKy+2,TKw-4,28,1,'#d8e8f0');
+  // Alt mavi su kısmı
+  const wGr=g.createLinearGradient(TKx,TKy+30,TKx,TKy+TKh);
+  wGr.addColorStop(0,'rgba(90,185,235,0.85)');
+  wGr.addColorStop(1,'rgba(50,145,205,0.95)');
+  rr(TKx+2,TKy+30,TKw-4,TKh-32,1,wGr);
+  g.save();g.beginPath();g.moveTo(TKx+2,TKy+30);
+  for(let wx=0;wx<=TKw-4;wx+=6)g.lineTo(TKx+2+wx,TKy+30+Math.sin((wx+tick*1.8)*0.022)*3);
+  g.lineTo(TKx+TKw-2,TKy+TKh-2);g.lineTo(TKx+2,TKy+TKh-2);g.closePath();
+  g.fillStyle='rgba(140,215,255,0.18)';g.fill();g.restore();
+
+  // Boru tank içindeki kısmını tekrar üstüne çiz (tank tarafından kapanıyor)
+  rr(pX-pW/2, TKy, pW, pBot-TKy, 1, '#78c8e8', '#5aaace', 1.2);
+  rr(pX-pW/2+2, TKy+2, pW-4, pBot-TKy-4, 0, '#a8dff0');
+  // Ok animasyonu tank içinde
+  g.save();
+  g.strokeStyle='rgba(255,255,255,0.9)'; g.lineWidth=1.8;
+  g.setLineDash([6,6]); g.lineDashOffset=(tick*2)%12;
+  g.beginPath(); g.moveTo(pX-3, pBot-10); g.lineTo(pX-3, TKy+10); g.stroke();
+  g.beginPath(); g.moveTo(pX+3, pBot-10); g.lineTo(pX+3, TKy+10); g.stroke();
+  g.setLineDash([]); g.restore();
+  // Ok başları tank içinde
+  g.fillStyle='rgba(255,255,255,0.95)';
+  g.beginPath(); g.moveTo(pX-7,TKy+38); g.lineTo(pX,TKy+38); g.lineTo(pX-3,TKy+26); g.closePath(); g.fill();
+  g.beginPath(); g.moveTo(pX,TKy+38); g.lineTo(pX+7,TKy+38); g.lineTo(pX+3,TKy+26); g.closePath(); g.fill();
+
+  // Level monitoring çubuklarının tank içi kısmını tekrar çiz
+  rr(lvX,    TKy+2, 6, TKh-4, 2,'rgba(122,136,160,0.7)','rgba(154,170,192,0.7)',1);
+  rr(lvX+18, TKy+2, 5, TKh-4, 2,'rgba(122,136,160,0.7)','rgba(154,170,192,0.7)',1);
+
+  // Temiz damlalar — yoğun ve kalabalık
+  if(!regen && cake>4){
+    if(tick%3===0) drops.push({x:M4x+40+Math.random()*(M5x-M4x-80), y:BELT_TOP+8, vy:3.5+Math.random()*2, life:1, r:2+Math.random()*2.5});
+    if(tick%5===0) drops.push({x:M4x+40+Math.random()*(M5x-M4x-80), y:BELT_TOP+8, vy:3+Math.random()*2, life:1, r:1.5+Math.random()*2});
+    if(tick%7===0) drops.push({x:M4x+40+Math.random()*(M5x-M4x-80), y:BELT_TOP+8, vy:4+Math.random()*1.5, life:1, r:3+Math.random()*2});
+  }
+  drops.forEach(d=>{d.y+=d.vy;d.life-=0.014;});
+  drops=drops.filter(d=>d.life>0&&d.y<TKy+TKh-15);
+  drops.forEach(d=>{
+    g.save();g.globalAlpha=d.life*0.9;g.fillStyle='#58b5dc';
+    g.beginPath();g.ellipse(d.x,d.y,d.r||2.5,(d.r||2.5)*1.6,0,0,Math.PI*2);g.fill();g.restore();
+  });
+
+  // ── SLUDGE CONTAINER ──
+  const SLx=870,SLy=420,SLw=110,SLh=155;
+
+  // Yeşil boru: sarı carrier belt'in 5'e bağlandığı noktadan başlıyor
+  // Carrier belt M5x'te bitiyor, üst yüzey BELT_TOP-12'de
+  // 5 nolu roller'ın sağ üst noktasından → container içine
+  const pipeStartX = M5x+M5r;
+  const pipeStartY = BELT_TOP-7;
+  const pipeX = SLx+30;
+
+  // Koyu kahverengi boru
+  g.strokeStyle='#3a1a08'; g.lineWidth=7; g.lineCap='round'; g.lineJoin='round';
+  g.beginPath();
+  g.moveTo(pipeStartX, pipeStartY);
+  g.lineTo(pipeX, pipeStartY);
+  g.lineTo(pipeX, SLy+20);
+  g.stroke();
+
+  // Akış animasyonu — sadece regen'de, koyu kahverengi
+  if(regen){
+    g.save();
+    g.strokeStyle='rgba(80,35,10,0.9)'; g.lineWidth=3;
+    g.setLineDash([6,6]); g.lineDashOffset=-(tick*2)%12;
+    g.beginPath();
+    g.moveTo(pipeStartX, pipeStartY);
+    g.lineTo(pipeX, pipeStartY);
+    g.lineTo(pipeX, SLy+20);
+    g.stroke(); g.setLineDash([]); g.restore();
+  }
+
+  // Aşağı ok — koyu kahverengi
+  g.fillStyle='#3a1a08';
+  g.beginPath();
+  g.moveTo(pipeX-5,SLy+8);g.lineTo(pipeX+5,SLy+8);g.lineTo(pipeX,SLy+20);
+  g.closePath();g.fill();
+
+  // Sludge container gövdesi
+  rr(SLx,SLy,SLw,SLh,2,'#e0e8f0','#b0bcc8',1.5);
+  const slF=SLh*(regen?0.52:0.28);
+  const slGr=g.createLinearGradient(SLx,SLy+SLh-slF,SLx,SLy+SLh);
+  slGr.addColorStop(0,'rgba(55,22,6,0.85)');
+  slGr.addColorStop(1,'rgba(30,10,2,0.98)');
+  rr(SLx+2,SLy+SLh-slF,SLw-4,slF,1,slGr);
+
+  // Container içi dashed çizgi
+  g.save();
+  g.strokeStyle='#2a1005'; g.lineWidth=1; g.setLineDash([5,4]);
+  g.beginPath();g.moveTo(pipeX,SLy+22);g.lineTo(pipeX,SLy+SLh-slF-5);g.stroke();
+  g.setLineDash([]); g.restore();
+
+  // Sludge akış simülasyonu — regen sırasında boruden container'a dökülüyor
+  if(regen){
+    // Boruden çıkan partiküller (hızlı, boru çıkışından)
+    if(tick%3===0){
+      sdrips.push({
+        x: pipeX + (Math.random()-0.5)*4,
+        y: SLy+18,
+        vx: (Math.random()-0.5)*1.5,
+        vy: 2.5+Math.random()*2,
+        life: 1,
+        r: 2+Math.random()*3,
+        type:'drop'
+      });
+    }
+    // Daha büyük parçalar ara sıra
+    if(tick%8===0){
+      sdrips.push({
+        x: pipeX + (Math.random()-0.5)*6,
+        y: SLy+15,
+        vx: (Math.random()-0.5)*2,
+        vy: 3+Math.random()*2.5,
+        life: 1,
+        r: 4+Math.random()*4,
+        type:'chunk'
+      });
+    }
+  }
+
+  sdrips.forEach(d=>{
+    d.y+=d.vy;
+    d.x+=d.vx||0;
+    d.vy+=0.15; // yerçekimi
+    d.life-=0.025;
+    // Container duvarına çarp
+    if(d.x<SLx+4) d.vx=Math.abs(d.vx)*0.5;
+    if(d.x>SLx+SLw-4) d.vx=-Math.abs(d.vx)*0.5;
+  });
+  sdrips=sdrips.filter(d=>d.life>0&&d.y<SLy+SLh-3);
+  sdrips.forEach(d=>{
+    g.save();
+    g.globalAlpha=d.life*0.9;
+    g.fillStyle=d.type==='chunk'?'#1a0802':'#2a0e03';
+    g.beginPath();
+    g.ellipse(d.x,d.y,d.r,(d.r*0.7),0,0,Math.PI*2);
+    g.fill();
+    g.restore();
+  });
+
+  // ── ETİKETLER — tamamen dışarıda ──
+  // Sol etiketler (sol kenarda)
+  const LL=5; // sol kenar x
+
+  // To machine — dikey yazı, borunun solunda
+  g.save();
+  g.translate(pX-12, 280);
+  g.rotate(-Math.PI/2);
+  g.fillStyle='#fff';
+  g.font='400 15px "Helvetica Neue",Helvetica,Arial,sans-serif';
+  g.textAlign='center';
+  g.fillText('Makineye', 0, 0);
+  g.restore();
+
+  txt('Seviye kontrolü', lvX+32, 333, '#fff',15,'left');
+
+  txt('Filtre fleesi', 160, 78, '#fff',15,'center');
+
+  txt('Süzülmüş sıvı tankı', TKx+TKw/2, TKy+TKh/2+5, '#fff',15,'center');
+
+  // Üst etiketler
+  txt('Makineden',  fmX-30, 18, '#fff',15,null);
+  wl(fmX, 22, fmX, fmTop);
+
+  txt('Filtre teknesi', FTx+FTw+8, FTy+20, '#fff',15,null);
+  wl(FTx+FTw, FTy+20, FTx+FTw+7, FTy+20);
+
+  // Sağ etiketler
+  const RL=855;
+  txt('Kayış tahriki',     RL, BELT_TOP-55, '#fff',15,null);
+  wl(RL-2, BELT_TOP-51, M6x, M6y-15);
+
+  txt('Taşıyıcı kayış',   RL, BELT_TOP-30, '#fff',15,null);
+  wl(RL-2, BELT_TOP-26, M5x+M5r, BELT_TOP-7);
+
+  // Sludge container — dikey yazı, container sağında
+  g.save();
+  g.translate(SLx+SLw+18, SLy+SLh/2-20);
+  g.rotate(-Math.PI/2);
+  g.fillStyle='#fff';
+  g.font='400 15px "Helvetica Neue",Helvetica,Arial,sans-serif';
+  g.textAlign='center';
+  g.fillText('Çamur konteyneri', 0, 0);
+  g.restore();
+
+  g.restore();
+  tick++;
+}
+
+function loop(){if(playing)draw();requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>

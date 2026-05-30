@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kompakt Filtre (KF) — Çalışma Prensibi</title>
+<style>
+  :root{
+    --blue-bg:#0c3a6b;
+    --body:#e7eaed;
+    --body2:#d4d9dd;
+    --chamber:#eef1f3;
+    --gold:#efb022;
+    --gold-d:#d6970f;
+    --cake:#8a7d33;
+    --green:#2f8f5b;
+    --green-d:#1f6e44;
+    --drop:#46a6e2;
+    --water:#2ba9e6;
+    --water-lt:#9fd6f3;
+    --exch:#2f9bd6;
+    --sludge:#6b4f25;
+    --sludge-lt:#7d5d2c;
+    --pulley:#9aa1a7;
+    --pulley-d:#5b636a;
+    --line:#ffffff;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--blue-bg);overflow:hidden;
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;}
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;}
+  #scaler{width:1200px;height:792px;transform-origin:center center;position:relative;}
+  svg{display:block;}
+
+  /* ---- caption band ---- */
+  #caption{position:absolute;left:0;bottom:0;width:1200px;height:106px;
+    display:flex;align-items:center;gap:26px;padding:0 40px;color:#fff;}
+  #phaseBadge{flex:0 0 auto;width:150px;}
+  #grpLabel{font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    opacity:.7;font-weight:600;}
+  #stepNo{font-size:46px;font-weight:300;line-height:1;margin-top:4px;
+    font-variant-numeric:tabular-nums;}
+  #stepNo small{font-size:20px;opacity:.55;}
+  #capText{flex:1;font-size:21px;line-height:1.4;font-weight:400;max-width:740px;
+    text-wrap:pretty;}
+  #capText b{font-weight:700;}
+
+  /* progress dots */
+  #dots{position:absolute;left:40px;top:32px;display:flex;gap:7px;align-items:center;}
+  .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.28);
+    cursor:pointer;transition:.25s;}
+  .dot.on{background:#ffd24a;transform:scale(1.25);}
+  .dot.sep{width:1px;height:14px;border-radius:0;background:rgba(255,255,255,.3);
+    cursor:default;margin:0 4px;}
+  #dotTitle{margin-left:14px;font-size:12px;letter-spacing:.14em;
+    text-transform:uppercase;color:rgba(255,255,255,.75);font-weight:600;}
+
+  /* ---- focus ring ---- */
+  #focusRing{fill:none;stroke:#ffd24a;stroke-width:3;opacity:0;
+    transition:cx .5s ease,cy .5s ease,r .5s ease,opacity .4s ease;}
+  #focusRing.on{opacity:.95;animation:ringPulse 1.7s ease-in-out infinite;}
+  @keyframes ringPulse{0%,100%{stroke-opacity:.45;}50%{stroke-opacity:1;}}
+
+  .hl{filter:drop-shadow(0 0 7px rgba(255,210,74,.95));}
+
+  /* continuous flows */
+  .dash-flow{stroke-dasharray:13 9;}
+  @keyframes beltMove{to{stroke-dashoffset:-44;}}
+  #beltExit,#beltEntry,#beltTrough{animation:beltMove .6s linear infinite;animation-play-state:paused;}
+  .belt-fast #beltExit,.belt-fast #beltEntry,.belt-fast #beltTrough{animation-play-state:running;}
+
+  @keyframes chevDown{0%{opacity:0;transform:translateY(-10px);}
+    25%{opacity:1;}75%{opacity:1;}100%{opacity:0;transform:translateY(14px);}}
+  .chev{animation:chevDown 1.6s linear infinite;}
+  .chev2{animation-delay:.53s;}
+  .chev3{animation-delay:1.06s;}
+
+  @keyframes dropFall{0%{opacity:0;transform:translateY(0);}
+    12%{opacity:1;}88%{opacity:1;}100%{opacity:0;transform:translateY(46px);}}
+  .drop{animation:dropFall 1.5s linear infinite;}
+
+  @keyframes pumpUp{0%{opacity:.15;transform:translateY(8px);}
+    50%{opacity:1;transform:translateY(0);}100%{opacity:.15;transform:translateY(-8px);}}
+  .pump-arrow{animation:pumpUp 1.9s ease-in-out infinite;}
+
+  @keyframes circ{0%,100%{opacity:.3;}50%{opacity:1;}}
+  .circ-arrow{animation:circ 2.2s ease-in-out infinite;}
+
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #windSpiral{transform-origin:885px 356px;animation:spin 6s linear infinite;}
+
+  @keyframes specFall{0%{opacity:0;transform:translateY(-6px);}
+    20%{opacity:1;}80%{opacity:1;}100%{opacity:0;transform:translateY(30px);}}
+  .spec{animation:specFall 2.4s linear infinite;}
+
+  .lvl-trans{transition:y .9s ease,height .9s ease;}
+  .soft{transition:opacity .5s ease,height .9s ease,y .9s ease;}
+
+  text{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;}
+  .lbl{font-size:15px;fill:#fff;font-weight:400;letter-spacing:.01em;}
+  .lbl-sm{font-size:13px;fill:#fff;font-weight:400;letter-spacing:.01em;}
+  .leader{stroke:#fff;stroke-width:1;fill:none;}
+  .title-w{font-size:21px;fill:#fff;font-weight:300;}
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div id="scaler">
+      <svg id="diagram" width="1200" height="686" viewBox="0 0 1200 686">
+        <!-- ===================== BACKGROUND ===================== -->
+        <rect x="0" y="0" width="1200" height="686" fill="var(--blue-bg)"/>
+
+        <!-- ===================== LEADER LINES + LABELS (left) ===================== -->
+        <g stroke-linecap="round">
+          <line class="leader" x1="178" y1="166" x2="334" y2="178"/>
+          <line class="leader" x1="178" y1="223" x2="478" y2="280"/>
+          <line class="leader" x1="178" y1="283" x2="412" y2="356"/>
+          <line class="leader" x1="178" y1="338" x2="300" y2="372"/>
+          <line class="leader" x1="178" y1="400" x2="258" y2="408"/>
+          <line class="leader" x1="178" y1="444" x2="236" y2="430"/>
+          <line class="leader" x1="178" y1="492" x2="248" y2="486"/>
+          <line class="leader" x1="178" y1="548" x2="212" y2="588"/>
+        </g>
+        <g text-anchor="end">
+          <text class="lbl" x="170" y="170">Filtre keçesi</text>
+          <text class="lbl" x="170" y="227">Seviye şalteri</text>
+          <text class="lbl" x="170" y="287">Filtre teknesi</text>
+          <text class="lbl-sm" x="170" y="315">Daldırma soğutucu</text>
+          <text class="lbl-sm" x="170" y="331">veya plakalı</text>
+          <text class="lbl-sm" x="170" y="347">ısı eşanjörü</text>
+          <text class="lbl" x="170" y="404">Seviye sensörü</text>
+          <text class="lbl" x="170" y="448">Besleme pompası</text>
+          <text class="lbl" x="170" y="496">Tank</text>
+          <text class="lbl-sm" x="170" y="546">Güvenlik</text>
+          <text class="lbl-sm" x="170" y="562">toplama kabı</text>
+        </g>
+
+        <!-- ===================== LEADER LINES + LABELS (right) ===================== -->
+        <g stroke-linecap="round">
+          <line class="leader" x1="582" y1="206" x2="690" y2="166"/>
+          <line class="leader" x1="542" y1="304" x2="690" y2="206"/>
+          <line class="leader" x1="641" y1="292" x2="690" y2="290"/>
+          <line class="leader" x1="652" y1="392" x2="690" y2="372"/>
+          <line class="leader" x1="664" y1="512" x2="715" y2="508"/>
+        </g>
+        <g text-anchor="start">
+          <text class="lbl" x="698" y="170">Kompakt filtre</text>
+          <text class="lbl" x="698" y="210">Giriş kutusu</text>
+          <text class="lbl" x="698" y="294">Kayış tahriki</text>
+          <text class="lbl" x="698" y="376">Taşıyıcı kayış</text>
+          <text class="lbl" x="722" y="512">Çamur tankı</text>
+        </g>
+
+        <!-- ===================== TANK (clean medium) ===================== -->
+        <g id="g-tank">
+          <rect x="190" y="470" width="430" height="108" fill="var(--water)"/>
+          <rect x="190" y="470" width="430" height="20" fill="var(--water-lt)" opacity="0.55"/>
+          <text x="205" y="560" font-size="15" font-weight="400" fill="#fff" opacity="0.9">Temiz sıvı</text>
+        </g>
+        <!-- safety catch pan -->
+        <rect id="g-pan" x="186" y="578" width="438" height="22" fill="none"
+              stroke="#cfe6fa" stroke-width="1.4" stroke-dasharray="6 5"/>
+
+        <!-- ===================== HEAT EXCHANGER + COIL ===================== -->
+        <g id="g-exch">
+          <rect x="288" y="330" width="66" height="122" rx="2" fill="var(--exch)"/>
+          <g stroke="#1d7fbb" stroke-width="2" opacity="0.6">
+            <line x1="294" y1="346" x2="348" y2="346"/>
+            <line x1="294" y1="362" x2="348" y2="362"/>
+            <line x1="294" y1="378" x2="348" y2="378"/>
+            <line x1="294" y1="394" x2="348" y2="394"/>
+            <line x1="294" y1="410" x2="348" y2="410"/>
+            <line x1="294" y1="426" x2="348" y2="426"/>
+            <line x1="294" y1="442" x2="348" y2="442"/>
+          </g>
+          <!-- coil -->
+          <path d="M300,452 q-9,8 0,16 q9,8 0,16 q-9,8 0,16 q9,8 0,16 q-9,8 0,16 q9,8 0,14"
+                fill="none" stroke="var(--exch)" stroke-width="6" stroke-linecap="round"/>
+          <path d="M318,452 q-9,8 0,16 q9,8 0,16 q-9,8 0,16 q9,8 0,16 q-9,8 0,16 q9,8 0,14"
+                fill="none" stroke="var(--exch)" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+          <path d="M336,452 q-9,8 0,16 q9,8 0,16 q-9,8 0,16 q9,8 0,16 q-9,8 0,16 q9,8 0,14"
+                fill="none" stroke="var(--exch)" stroke-width="6" stroke-linecap="round" opacity="0.7"/>
+        </g>
+
+        <!-- supply channel: clean medium pumped upward -->
+        <g class="pump-arrow" fill="#cfe9fb" opacity="0.95">
+          <rect x="227" y="346" width="13" height="62"/>
+          <path d="M220,350 L233,326 L246,350 Z"/>
+        </g>
+
+        <!-- ===================== SUPPLY PUMP + SENSORS ===================== -->
+        <g id="g-pump">
+          <!-- intake stem down into tank -->
+          <rect x="226" y="436" width="14" height="48" fill="var(--pulley-d)"/>
+          <circle cx="233" cy="420" r="18" fill="var(--pulley)"/>
+          <!-- impeller arrow pointing up -->
+          <path d="M233,409 L243,428 L223,428 Z" fill="#fff"/>
+        </g>
+        <g id="g-sensor">
+          <rect x="256" y="398" width="4" height="86" fill="var(--pulley-d)"/>
+          <circle cx="258" cy="396" r="6" fill="var(--pulley)"/>
+          <rect x="276" y="398" width="4" height="86" fill="var(--pulley-d)"/>
+          <circle cx="278" cy="396" r="6" fill="var(--pulley)"/>
+        </g>
+
+        <!-- ===================== MACHINE BODY ===================== -->
+        <g id="g-body">
+          <path d="M386,580 L386,256 L505,150 L622,234 L622,580 Z"
+                fill="var(--body)" stroke="#c7ccd0" stroke-width="1"/>
+          <!-- inner chamber circle -->
+          <circle cx="500" cy="278" r="112" fill="var(--chamber)"/>
+          <!-- scattered tick marks inside chamber -->
+          <g stroke="#5b636a" stroke-width="2.4" stroke-linecap="round" opacity="0.75">
+            <line x1="452" y1="214" x2="458" y2="222"/>
+            <line x1="548" y1="210" x2="556" y2="214"/>
+            <line x1="572" y1="250" x2="580" y2="248"/>
+            <line x1="430" y1="262" x2="438" y2="260"/>
+            <line x1="560" y1="296" x2="568" y2="300"/>
+            <line x1="440" y1="306" x2="448" y2="310"/>
+            <line x1="582" y1="278" x2="590" y2="278"/>
+            <line x1="468" y1="196" x2="472" y2="204"/>
+          </g>
+        </g>
+
+        <!-- level switch (gauge / compass) -->
+        <g id="g-gauge">
+          <circle cx="484" cy="282" r="15" fill="#fff" stroke="#8a9097" stroke-width="2"/>
+          <circle cx="484" cy="282" r="3" fill="#5b636a"/>
+          <path d="M484,282 L490,270" stroke="#d6970f" stroke-width="2.4" stroke-linecap="round"/>
+          <rect x="476" y="298" width="16" height="10" fill="#7b828a"/>
+        </g>
+
+        <!-- ===================== INTAKE PIPE (dirty KSS in) ===================== -->
+        <g id="g-intake">
+          <rect x="514" y="120" width="20" height="178" fill="var(--gold)"/>
+          <rect x="510" y="292" width="32" height="26" fill="#7b828a"/>
+          <g fill="#a87a08">
+            <path class="chev"  d="M518,150 L524,160 L530,150 L530,156 L524,166 L518,156 Z"/>
+            <path class="chev chev2" d="M518,150 L524,160 L530,150 L530,156 L524,166 L518,156 Z"/>
+            <path class="chev chev3" d="M518,150 L524,160 L530,150 L530,156 L524,166 L518,156 Z"/>
+          </g>
+        </g>
+
+        <!-- ===================== FILTER TROUGH ===================== -->
+        <clipPath id="bowlClip">
+          <path d="M421,300 L421,356 A79,74 0 0 0 579,356 L579,300 Z"/>
+        </clipPath>
+        <g id="g-trough">
+          <!-- liquid (clipped) -->
+          <g clip-path="url(#bowlClip)">
+            <rect id="goldLiquid" class="lvl-trans" x="421" y="312" width="158" height="130" fill="var(--gold)"/>
+            <!-- filter cake at bottom -->
+            <rect id="cakeLayer" class="lvl-trans" x="421" y="424" width="158" height="6" fill="var(--cake)"/>
+            <g id="cakeSpecks" fill="#5f5520" opacity="0">
+              <circle cx="450" cy="416" r="2.5"/><circle cx="478" cy="420" r="2.5"/>
+              <circle cx="506" cy="417" r="2.5"/><circle cx="534" cy="420" r="2.5"/>
+              <circle cx="492" cy="410" r="2"/><circle cx="464" cy="412" r="2"/>
+              <circle cx="520" cy="412" r="2"/>
+            </g>
+          </g>
+          <!-- trough wall -->
+          <path d="M414,300 L414,357 A86,80 0 0 0 586,357 L586,300"
+                fill="none" stroke="var(--body2)" stroke-width="13" stroke-linecap="round"/>
+          <!-- fleece sagging into the trough (same continuous belt) -->
+          <path id="beltTrough" class="dash-flow" d="M428,302 L421,356 A79,74 0 0 0 579,356 L591,303"
+                fill="none" stroke="var(--green)" stroke-width="4.6" stroke-linecap="round"/>
+          <!-- carrier belt support frame (dashed): top-left -> bottom pulleys -> up to belt drive -->
+          <path d="M406,294 L432,455 L570,455 L616,298"
+                fill="none" stroke="#3a3f44" stroke-width="1.4" stroke-dasharray="5 5" opacity="0.8"/>
+        </g>
+
+        <!-- clean droplets falling from trough -->
+        <g id="drops" fill="var(--drop)">
+          <g class="drop" style="animation-delay:0s"><path d="M452,440 q-4,7 0,11 q4,-4 0,-11 Z"/></g>
+          <g class="drop" style="animation-delay:.4s"><path d="M482,446 q-4,7 0,11 q4,-4 0,-11 Z"/></g>
+          <g class="drop" style="animation-delay:.8s"><path d="M512,448 q-4,7 0,11 q4,-4 0,-11 Z"/></g>
+          <g class="drop" style="animation-delay:.25s"><path d="M542,446 q-4,7 0,11 q4,-4 0,-11 Z"/></g>
+          <g class="drop" style="animation-delay:.6s"><path d="M497,452 q-4,7 0,11 q4,-4 0,-11 Z"/></g>
+          <g class="drop" style="animation-delay:1s"><path d="M467,452 q-4,7 0,11 q4,-4 0,-11 Z"/></g>
+        </g>
+
+        <!-- ===================== PULLEYS ===================== -->
+        <g fill="var(--pulley)" stroke="var(--pulley-d)" stroke-width="2.5">
+          <circle cx="404" cy="288" r="15"/>
+          <circle cx="432" cy="455" r="15"/>
+          <circle cx="570" cy="455" r="15"/>
+          <circle id="drivePulley" cx="626" cy="292" r="15"/>
+        </g>
+        <g fill="var(--pulley-d)">
+          <circle cx="404" cy="288" r="3.5"/>
+          <circle cx="432" cy="455" r="3.5"/>
+          <circle cx="570" cy="455" r="3.5"/>
+          <circle cx="626" cy="292" r="3.5"/>
+        </g>
+
+        <!-- ===================== CARRIER BELT (green runs) ===================== -->
+        <g id="g-belt" fill="none" stroke="var(--green)" stroke-width="5" stroke-linecap="round">
+          <!-- entry run: fleece roll -> TL pulley -> down into the trough fleece -->
+          <path id="beltEntry" class="dash-flow" d="M362,205 L427,250 L428,302"/>
+          <!-- exit run: trough fleece -> up -> wrap belt drive -> down to sludge tank -->
+          <path id="beltExit" class="dash-flow" d="M591,303 L600,290 A26,26 0 0 1 652,292 L652,468 L658,476"/>
+        </g>
+
+        <!-- belt drive direction arrow (down-run) -->
+        <g id="beltArrow" fill="var(--green-d)" opacity="0">
+          <path d="M652,344 L646,332 L658,332 Z"/>
+        </g>
+
+        <!-- ===================== FILTER FLEECE ROLL (spiral) ===================== -->
+        <g id="g-fleece">
+          <circle cx="368" cy="178" r="34" fill="#eef1f3"/>
+          <g fill="none" stroke="var(--green)" stroke-width="3">
+            <circle cx="368" cy="178" r="28"/>
+            <circle cx="368" cy="178" r="22"/>
+            <circle cx="368" cy="178" r="16"/>
+            <circle cx="368" cy="178" r="10"/>
+            <circle cx="368" cy="178" r="5"/>
+          </g>
+        </g>
+
+        <!-- ===================== MAIN SLUDGE TANK ===================== -->
+        <g id="g-sludge">
+          <rect x="628" y="470" width="58" height="110" fill="var(--body)" stroke="#c7ccd0" stroke-width="1"/>
+          <rect id="sludgeFill" class="lvl-trans" x="630" y="552" width="54" height="26" fill="var(--sludge)"/>
+          <g fill="#4f3a1a">
+            <circle cx="642" cy="556" r="2.5"/><circle cx="662" cy="560" r="2.5"/>
+            <circle cx="674" cy="554" r="2"/><circle cx="650" cy="564" r="2"/>
+          </g>
+        </g>
+
+        <!-- ===================== WINDING UNIT (option) ===================== -->
+        <text class="title-w" x="828" y="120">Sarma ünitesi</text>
+        <text class="title-w" x="828" y="146">(Opsiyon)</text>
+
+        <g stroke-linecap="round">
+          <line class="leader" x1="958" y1="298" x2="1000" y2="298"/>
+          <line class="leader" x1="930" y1="356" x2="1000" y2="392"/>
+        </g>
+        <text class="lbl" x="1008" y="302" text-anchor="start">Sıyırıcı</text>
+        <text class="lbl-sm" x="1008" y="390" text-anchor="start">Sarılan</text>
+        <text class="lbl-sm" x="1008" y="406" text-anchor="start">filtre keçesi</text>
+
+        <g id="g-winding">
+          <!-- body -->
+          <path d="M812,470 L812,250 L905,250 L978,250 L978,470 Z"
+                fill="var(--body)" stroke="#c7ccd0" stroke-width="1"/>
+          <!-- incoming green fleece over pulley -->
+          <path class="dash-flow" id="beltWind" d="M812,262 L895,262 A14,14 0 0 1 909,276 L909,320"
+                fill="none" stroke="var(--green)" stroke-width="5" stroke-linecap="round"
+                style="animation:beltMove 1.4s linear infinite;"/>
+          <circle cx="909" cy="262" r="13" fill="var(--pulley)" stroke="var(--pulley-d)" stroke-width="2.5"/>
+          <circle cx="909" cy="262" r="3.5" fill="var(--pulley-d)"/>
+          <!-- direction arrow -->
+          <path d="M903,300 L897,288 L909,288 Z" fill="var(--green-d)"/>
+          <!-- wound spiral roll -->
+          <g id="windSpiral">
+            <circle cx="885" cy="356" r="40" fill="#eef1f3"/>
+            <g fill="none" stroke="var(--green)" stroke-width="3.4">
+              <circle cx="885" cy="356" r="34"/>
+              <circle cx="885" cy="356" r="27"/>
+              <circle cx="885" cy="356" r="20"/>
+              <circle cx="885" cy="356" r="13"/>
+              <circle cx="885" cy="356" r="6"/>
+            </g>
+          </g>
+          <!-- scraper -->
+          <rect x="948" y="288" width="14" height="6" fill="var(--pulley-d)"/>
+          <path d="M948,291 L936,296 L948,301 Z" fill="var(--pulley-d)"/>
+          <!-- falling dirt specks -->
+          <g fill="var(--sludge)">
+            <circle class="spec" cx="930" cy="350" r="2.6" style="animation-delay:0s"/>
+            <circle class="spec" cx="945" cy="370" r="2.6" style="animation-delay:.8s"/>
+            <circle class="spec" cx="922" cy="388" r="2.6" style="animation-delay:1.4s"/>
+            <circle class="spec" cx="938" cy="400" r="2.2" style="animation-delay:.4s"/>
+          </g>
+        </g>
+        <!-- winding sludge tank -->
+        <g>
+          <rect x="812" y="486" width="166" height="94" fill="var(--body)" stroke="#c7ccd0" stroke-width="1"/>
+          <rect id="windSludge" class="lvl-trans" x="814" y="556" width="162" height="22" fill="var(--sludge)"/>
+          <g fill="#4f3a1a">
+            <circle cx="850" cy="560" r="2.6"/><circle cx="892" cy="564" r="2.6"/>
+            <circle cx="934" cy="558" r="2.6"/><circle cx="912" cy="566" r="2.2"/>
+            <circle cx="868" cy="566" r="2.2"/>
+          </g>
+        </g>
+
+        <!-- ===================== FOCUS RING ===================== -->
+        <circle id="focusRing" cx="500" cy="278" r="60"/>
+      </svg>
+
+      <!-- ===================== CAPTION ===================== -->
+      <div id="caption">
+        <div id="phaseBadge">
+          <div id="grpLabel">Filtrasyon süreci</div>
+          <div id="stepNo">01<small>/06</small></div>
+        </div>
+        <div id="capText">Kirli sıvı, giriş kutusundan yanal olarak filtre teknesine akar.</div>
+      </div>
+
+      <!-- progress dots -->
+      <div id="dots"></div>
+      <div id="dotTitle">Kompakt Filtre (KF)</div>
+
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+  /* ---------------- phase definitions ---------------- */
+  const PHASES = [
+    // group 1 — filtration
+    {g:"Filtrasyon süreci", n:1, focus:{x:524,y:230,r:48}, hl:"g-intake",
+     t:"Kirli sıvı, <b>giriş kutusundan</b> yanal olarak filtre teknesine akar.",
+     st:{gold:312, cake:6, belt:"slow", sludge:26, wind:22, specks:false}},
+    {g:"Filtrasyon süreci", n:2, focus:{x:500,y:360,r:96}, hl:"g-trough",
+     t:"<b>Filtre keçesi</b>, sıvı içinden geçerken kir parçacıklarını tutar.",
+     st:{gold:312, cake:10, belt:"slow", sludge:26, wind:22, specks:true}},
+    {g:"Filtrasyon süreci", n:3, focus:{x:500,y:412,r:60}, hl:"g-trough",
+     t:"Kir parçacıkları, en küçük partikülleri bile ayıran bir <b>filtre keki</b> oluşturur.",
+     st:{gold:312, cake:20, belt:"slow", sludge:26, wind:22, specks:true}},
+    {g:"Filtrasyon süreci", n:4, focus:{x:400,y:500,r:120}, hl:"g-tank",
+     t:"Temizlenen sıvı, <b>temiz tankta</b> toplanır.",
+     st:{gold:312, cake:24, belt:"slow", sludge:26, wind:22, specks:true}},
+    {g:"Filtrasyon süreci", n:5, focus:{x:320,y:400,r:70}, hl:"g-exch",
+     t:"Alçak ve yüksek basınçlı <b>pompalar</b>, takım tezgâhına gerektiğinde temizlenmiş KSS sağlar.",
+     st:{gold:312, cake:28, belt:"slow", sludge:26, wind:22, specks:true}},
+    // group 2 — regeneration
+    {g:"Filtre kayışı rejenerasyonu", n:1, focus:{x:500,y:412,r:60}, hl:"g-trough",
+     t:"Büyüyen <b>filtre keki</b> akış direncini artırır.",
+     st:{gold:308, cake:40, belt:"slow", sludge:26, wind:22, specks:true}},
+    {g:"Filtre kayışı rejenerasyonu", n:2, focus:{x:500,y:330,r:70}, hl:"g-trough",
+     t:"Filtre teknesindeki <b>sıvı seviyesi yükselir.</b>",
+     st:{gold:286, cake:40, belt:"slow", sludge:26, wind:22, specks:true}},
+    {g:"Filtre kayışı rejenerasyonu", n:3, focus:{x:626,y:292,r:42}, hl:"g-beltdrive",
+     t:"<b>Kayış tahriki</b> belirli bir seviyede devreye girer (alternatif: zaman kontrollü).",
+     st:{gold:286, cake:40, belt:"fast", sludge:26, wind:22, specks:false, arrow:true}},
+    {g:"Filtre kayışı rejenerasyonu", n:4, focus:{x:500,y:360,r:96}, hl:"g-trough",
+     t:"<b>Taşıyıcı kayış</b>, filtre yüzeyine bir parça temiz filtre keçesi taşır.",
+     st:{gold:300, cake:6, belt:"fast", sludge:34, wind:30, specks:false, arrow:true}},
+    {g:"Filtre kayışı rejenerasyonu", n:5, focus:{x:500,y:330,r:70}, hl:"g-trough",
+     t:"<b>Sıvı seviyesi tekrar düşer.</b>",
+     st:{gold:314, cake:8, belt:"slow", sludge:34, wind:30, specks:false}},
+    {g:"Filtre kayışı rejenerasyonu", n:6, focus:{x:890,y:360,r:120}, hl:"g-winding",
+     t:"<b>Çamur kabı</b> veya <b>sarma ünitesi</b> kirli filtre keçesini alır.",
+     st:{gold:314, cake:8, belt:"slow", sludge:48, wind:40, specks:false}},
+  ];
+  const GROUP_TOTAL = {"Filtrasyon süreci":5, "Filtre kayışı rejenerasyonu":6};
+
+  /* ---------------- elements ---------------- */
+  const $ = s=>document.querySelector(s);
+  const grpLabel=$("#grpLabel"), stepNo=$("#stepNo"), capText=$("#capText");
+  const ring=$("#focusRing"), scaler=$("#scaler"), diagram=$("#diagram");
+  const goldLiquid=$("#goldLiquid"), cakeLayer=$("#cakeLayer"), cakeSpecks=$("#cakeSpecks");
+  const sludgeFill=$("#sludgeFill"), windSludge=$("#windSludge"), beltArrow=$("#beltArrow");
+  const dots=$("#dots");
+  const BOTTOM=430; // bowl bottom y for cake
+
+  let idx=0, playing=true, timer=null;
+  const DUR=4600;
+
+  /* build dots */
+  PHASES.forEach((p,i)=>{
+    if(i===5){const s=document.createElement("div");s.className="dot sep";dots.appendChild(s);}
+    const d=document.createElement("div"); d.className="dot"; d.dataset.i=i;
+    d.addEventListener("click",()=>{go(i);});
+    dots.appendChild(d);
+  });
+  const dotEls=[...dots.querySelectorAll(".dot:not(.sep)")];
+
+  function applyState(s){
+    // gold level
+    goldLiquid.setAttribute("y", s.gold);
+    goldLiquid.setAttribute("height", 442 - s.gold);
+    // cake
+    cakeLayer.setAttribute("y", BOTTOM - s.cake);
+    cakeLayer.setAttribute("height", s.cake);
+    cakeSpecks.style.transition="opacity .6s ease";
+    cakeSpecks.setAttribute("opacity", s.specks ? 0.9 : 0);
+    // sludge fills
+    sludgeFill.setAttribute("y", 578 - s.sludge);
+    sludgeFill.setAttribute("height", s.sludge);
+    windSludge.setAttribute("y", 578 - s.wind);
+    windSludge.setAttribute("height", s.wind);
+    // belt speed
+    diagram.classList.remove("belt-fast","belt-slow");
+    diagram.classList.add(s.belt==="fast"?"belt-fast":"belt-slow");
+    beltArrow.style.transition="opacity .4s ease";
+    beltArrow.setAttribute("opacity", s.arrow?1:0);
+  }
+
+  function setHighlight(id){
+    document.querySelectorAll(".hl").forEach(e=>e.classList.remove("hl"));
+    const el=document.getElementById(id);
+    if(el) el.classList.add("hl");
+  }
+
+  function render(){
+    const p=PHASES[idx];
+    grpLabel.textContent=p.g;
+    stepNo.innerHTML=String(p.n).padStart(2,"0")+"<small>/"+String(GROUP_TOTAL[p.g]).padStart(2,"0")+"</small>";
+    capText.innerHTML=p.t;
+    ring.classList.add("on");
+    ring.setAttribute("cx",p.focus.x);
+    ring.setAttribute("cy",p.focus.y);
+    ring.setAttribute("r",p.focus.r);
+    setHighlight(p.hl);
+    applyState(p.st);
+    dotEls.forEach((d,i)=>d.classList.toggle("on",i===idx));
+  }
+
+  function go(i){ idx=(i+PHASES.length)%PHASES.length; render(); resetTimer(); }
+  function next(){ go(idx+1); }
+  function prev(){ go(idx-1); }
+
+  function resetTimer(){
+    clearTimeout(timer);
+    if(playing){ timer=setTimeout(()=>{ idx=(idx+1)%PHASES.length; render(); resetTimer(); }, DUR); }
+  }
+  function play(){ playing=true; resetTimer(); }
+
+  /* ---------------- scaling ---------------- */
+  function fit(){
+    const s=Math.min(window.innerWidth/1200, window.innerHeight/792);
+    scaler.style.transform="scale("+s+")";
+  }
+  window.addEventListener("resize",fit);
+
+  fit(); render(); play();
+})();
+</script>
+</body>
+</html>

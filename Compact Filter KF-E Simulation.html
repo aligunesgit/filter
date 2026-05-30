@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<!-- saved from url=(0094)file:///Users/aligunes/Documents/Codex/2026-05-30/selam/outputs/compact-filter-simulation.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compact Filter KF-E Simulation</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: #0b3a6c;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    .page {
+      width: min(1062px, 100vw);
+      margin: 0 auto;
+      background: #0b3a6c;
+    }
+
+    .diagram {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1062 / 584;
+      overflow: hidden;
+      background: #0b3a6c;
+    }
+
+    .base {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .belt-dash {
+      fill: none;
+      stroke: #2f8f5b;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 8 13;
+      opacity: .95;
+      filter: drop-shadow(0 0 1px rgba(255,255,255,.7));
+      animation: belt 2.2s linear infinite;
+    }
+
+    .flow {
+      stroke: #efb022;
+      stroke-width: 3;
+      stroke-linecap: round;
+      opacity: .9;
+      animation: pulse 1.05s ease-in-out infinite;
+    }
+
+    .pipe-glow {
+      fill: none;
+      stroke: #efb022;
+      stroke-width: 7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 18 90;
+      opacity: .9;
+      animation: pipeRun 1.7s linear infinite;
+    }
+
+    .pipe-glow.blue {
+      stroke: #46a6e2;
+      stroke-width: 6;
+      stroke-dasharray: 14 72;
+      opacity: .9;
+      animation-duration: 1.45s;
+    }
+
+    .blue-flow {
+      stroke: #46a6e2;
+      stroke-width: 3;
+      stroke-linecap: round;
+      opacity: .9;
+      animation: pulse .95s ease-in-out infinite;
+    }
+
+    .drop {
+      fill: #46a6e2;
+      opacity: .95;
+      animation: drip 1.55s ease-in infinite;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .drop:nth-of-type(2) { animation-delay: .18s; }
+    .drop:nth-of-type(3) { animation-delay: .33s; }
+    .drop:nth-of-type(4) { animation-delay: .51s; }
+    .drop:nth-of-type(5) { animation-delay: .71s; }
+    .drop:nth-of-type(6) { animation-delay: .9s; }
+    .drop:nth-of-type(7) { animation-delay: 1.08s; }
+
+    .cake {
+      fill: #6b4f25;
+      opacity: .95;
+      filter: drop-shadow(0 0 1px rgba(255,255,255,.35));
+    }
+
+    .spray {
+      stroke: #cfe9fb;
+      stroke-width: 2;
+      stroke-linecap: round;
+      opacity: .95;
+      animation: spray .75s ease-in-out infinite alternate;
+    }
+
+    .brush {
+      stroke: #fff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      opacity: .95;
+      transform-origin: 676px 304px;
+      animation: spin 1s linear infinite;
+    }
+
+    .pump-ring {
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 3;
+      opacity: .7;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: pump 1.25s ease-out infinite;
+    }
+
+    .level-wave {
+      fill: none;
+      stroke: #efb022;
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 16 18;
+      opacity: .9;
+      animation: wave 2.6s linear infinite;
+    }
+
+    .particle {
+      fill: #5f5520;
+      opacity: .95;
+      filter: drop-shadow(0 0 1px rgba(255,255,255,.45));
+    }
+
+    .erase {
+      fill: #0b3a6c;
+    }
+
+    .erase-line {
+      fill: none;
+      stroke: #0b3a6c;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .new-leader {
+      fill: none;
+      stroke: #fff;
+      stroke-width: 1;
+      stroke-linecap: square;
+      stroke-linejoin: round;
+    }
+
+    .new-label {
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 15px;
+      fill: #fff;
+      font-weight: 400;
+      letter-spacing: .01em;
+    }
+
+    .process-caption {
+      height: 106px;
+      display: flex;
+      align-items: center;
+      gap: 26px;
+      padding: 0 40px;
+      color: #fff;
+      background: #0b3a6c;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    .process-caption .badge {
+      flex: 0 0 auto;
+      width: 150px;
+    }
+
+    .process-caption .group {
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      opacity: .7;
+      font-weight: 600;
+    }
+
+    .process-caption .step {
+      font-size: 34px;
+      font-weight: 300;
+      line-height: 1;
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .process-caption .step small {
+      font-size: 15px;
+      opacity: .55;
+    }
+
+    .process-caption .text {
+      flex: 1;
+      font-size: 17px;
+      line-height: 1.35;
+      font-weight: 400;
+      max-width: 740px;
+      text-wrap: pretty;
+    }
+
+    .process-caption .text b {
+      font-weight: 700;
+    }
+
+    @keyframes belt {
+      to { stroke-dashoffset: -42; }
+    }
+
+    @keyframes pulse {
+      50% { opacity: .22; }
+    }
+
+    @keyframes pipeRun {
+      to { stroke-dashoffset: -108; }
+    }
+
+    @keyframes drip {
+      0% { opacity: 0; transform: translateY(-12px) scale(.7); }
+      25% { opacity: .9; }
+      100% { opacity: 0; transform: translateY(46px) scale(1); }
+    }
+
+    @keyframes spray {
+      from { opacity: .2; transform: translateX(-1px); }
+      to { opacity: .8; transform: translateX(3px); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pump {
+      0% { opacity: .75; transform: scale(.82); }
+      100% { opacity: 0; transform: scale(1.75); }
+    }
+
+    @keyframes wave {
+      to { stroke-dashoffset: -68; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="diagram" aria-label="Compact filter KF-E animated simulation">
+      <img class="base" src="./Compact Filter KF-E Simulation_files/compact-filter-clean.png" alt="Compact filter KF-E technical diagram">
+      <svg class="overlay" viewBox="0 0 1062 584" aria-hidden="true">
+        <defs>
+          <path id="sludgePath" d="M710 245 C735 284 717 328 731 360 C742 390 718 410 716 455 C714 486 711 504 716 526"></path>
+          <path id="beltParticlePath" d="M343 205 V365 H504 C520 365 525 356 529 338 L550 248 C553 234 562 230 578 230 H687"></path>
+          <path id="goldPipeTop" d="M690 171 H790"></path>
+          <path id="goldPipeLower" d="M650 384 H790"></path>
+          <path id="goldPipeBend" d="M618 356 C631 356 634 350 634 339 V244 C634 230 644 222 657 222 H696"></path>
+          <path id="bluePipeLeft" d="M229 465 V292"></path>
+          <path id="bluePipeMid" d="M570 460 V305"></path>
+        </defs>
+
+        <!-- Filter fleece/carrier belt motion, exactly over the belt path in the source image. -->
+        <path class="belt-dash" d="M343 205 V365 H504 C520 365 525 356 529 338 L550 248 C553 234 562 230 578 230 H687"></path>
+
+        <path class="pipe-glow" d="M690 171 H790"></path>
+        <path class="pipe-glow" d="M650 384 H790"></path>
+        <path class="pipe-glow" d="M618 356 C631 356 634 350 634 339 V244 C634 230 644 222 657 222 H696"></path>
+        <path class="pipe-glow blue" d="M229 465 V292"></path>
+        <path class="pipe-glow blue" d="M570 460 V305"></path>
+        <path class="level-wave" d="M363 256 C410 249 485 249 530 257"></path>
+
+        <!-- Inlet and pump flow hints, kept small so the original image remains visually dominant. -->
+        <line class="flow" x1="450" y1="106" x2="450" y2="145"></line>
+        <line class="flow" x1="450" y1="166" x2="450" y2="211"></line>
+        <line class="blue-flow" x1="229" y1="452" x2="229" y2="407"></line>
+        <line class="blue-flow" x1="229" y1="368" x2="229" y2="326"></line>
+        <line class="blue-flow" x1="570" y1="454" x2="570" y2="406"></line>
+
+        <circle class="pump-ring" cx="229" cy="377" r="13"></circle>
+        <circle class="pump-ring" cx="570" cy="378" r="13"></circle>
+        <circle class="pump-ring" cx="690" cy="171" r="14"></circle>
+        <circle class="pump-ring" cx="650" cy="384" r="14"></circle>
+
+        <!-- Filtered liquid drops. -->
+        <path class="drop" d="M419 350 C411 361 412 366 419 370 C426 366 427 361 419 350 Z"></path>
+        <path class="drop" d="M447 353 C439 365 440 370 447 374 C454 370 455 365 447 353 Z"></path>
+        <path class="drop" d="M476 350 C468 362 469 367 476 371 C483 367 484 362 476 350 Z"></path>
+        <path class="drop" d="M502 349 C494 361 495 366 502 370 C509 366 510 361 502 349 Z"></path>
+        <path class="drop" d="M395 394 C387 406 388 411 395 415 C402 411 403 406 395 394 Z"></path>
+        <path class="drop" d="M447 396 C439 408 440 413 447 417 C454 413 455 408 447 396 Z"></path>
+        <path class="drop" d="M504 395 C496 407 497 412 504 416 C511 412 512 407 504 395 Z"></path>
+
+        <!-- Back-flushing spray and brush movement. -->
+        <line class="spray" x1="606" y1="288" x2="606" y2="318"></line>
+        <line class="spray" x1="611" y1="287" x2="611" y2="320"></line>
+        <line class="spray" x1="616" y1="287" x2="616" y2="319"></line>
+        <line class="spray" x1="622" y1="288" x2="622" y2="318"></line>
+        <line class="brush" x1="666" y1="304" x2="686" y2="304"></line>
+        <line class="brush" x1="676" y1="294" x2="676" y2="314"></line>
+        <line class="brush" x1="669" y1="297" x2="683" y2="311"></line>
+        <line class="brush" x1="683" y1="297" x2="669" y2="311"></line>
+
+        <!-- Sludge particles moving down toward the optional sludge container. -->
+        <circle class="cake" r="3">
+          <animatemotion dur="2.4s" repeatCount="indefinite"><mpath href="#sludgePath"></mpath></animatemotion>
+        </circle>
+        <circle class="cake" r="2.5">
+          <animatemotion dur="2.7s" begin=".25s" repeatCount="indefinite"><mpath href="#sludgePath"></mpath></animatemotion>
+        </circle>
+        <circle class="cake" r="3">
+          <animatemotion dur="2.15s" begin=".55s" repeatCount="indefinite"><mpath href="#sludgePath"></mpath></animatemotion>
+        </circle>
+        <circle class="cake" r="2">
+          <animatemotion dur="2.9s" begin=".9s" repeatCount="indefinite"><mpath href="#sludgePath"></mpath></animatemotion>
+        </circle>
+
+        <circle class="particle" r="2.8">
+          <animatemotion dur="4.1s" repeatCount="indefinite"><mpath href="#beltParticlePath"></mpath></animatemotion>
+        </circle>
+        <circle class="particle" r="2.2">
+          <animatemotion dur="4.6s" begin=".7s" repeatCount="indefinite"><mpath href="#beltParticlePath"></mpath></animatemotion>
+        </circle>
+        <circle class="particle" r="2.6">
+          <animatemotion dur="3.8s" begin="1.4s" repeatCount="indefinite"><mpath href="#beltParticlePath"></mpath></animatemotion>
+        </circle>
+
+        <g aria-hidden="true">
+          <path class="new-leader" d="M185 167 H283 L333 191"></path>
+          <path class="new-leader" d="M137 211 H335"></path>
+          <path class="new-leader" d="M175 253 H431"></path>
+          <path class="new-leader" d="M92 281 H253 L280 360"></path>
+          <path class="new-leader" d="M109 374 H229"></path>
+          <path class="new-leader" d="M130 473 H207"></path>
+          <path class="new-leader" d="M623 76 H584 L525 180"></path>
+          <path class="new-leader" d="M623 123 H585 L553 224"></path>
+          <path class="new-leader" d="M839 103 H778 L704 160"></path>
+          <path class="new-leader" d="M831 191 H745"></path>
+          <path class="new-leader" d="M831 249 H686"></path>
+          <path class="new-leader" d="M831 300 H622"></path>
+          <path class="new-leader" d="M831 339 H641"></path>
+          <path class="new-leader" d="M831 410 H650"></path>
+          <path class="new-leader" d="M831 453 H746"></path>
+
+          <text class="new-label" x="39" y="170">Sonsuz filtre bandı</text>
+          <text class="new-label" x="39" y="217">Taşıyıcı bant</text>
+          <text class="new-label" x="37" y="258">Dolum seviye şalteri</text>
+          <text class="new-label" x="37" y="290">Seviye</text>
+          <text class="new-label" x="37" y="308">ölçümü</text>
+          <text class="new-label" x="37" y="376">Besleme</text>
+          <text class="new-label" x="37" y="398">pompa(lar)ı</text>
+          <text class="new-label" x="37" y="479">Temiz tank</text>
+
+          <text class="new-label" x="631" y="82">Filtre haznesi</text>
+          <text class="new-label" x="631" y="128">Bant tahriki</text>
+          <text class="new-label" x="852" y="109">Vakum pompası</text>
+          <text class="new-label" x="848" y="197">Konsantre kurutma</text>
+          <text class="new-label" x="849" y="255">Sıyırma düzeni</text>
+          <text class="new-label" x="849" y="306">Geri yıkama düzeni</text>
+          <text class="new-label" x="849" y="345">Kaldırma pompası</text>
+          <text class="new-label" x="849" y="416">Yıkama pompası</text>
+          <text class="new-label" x="849" y="459">Çamur kabı</text>
+          <text class="new-label" x="849" y="480">(Opsiyon)</text>
+        </g>
+      </svg>
+    </section>
+    <div class="process-caption" data-caption data-steps='[
+      "Kirlenmiş sıvı, <b>giriş kutusundan</b> filtre teknesine yanlamasına akar.",
+      "<b>Filtre bandı</b>, akış sırasında kirletici parçacıkları tutar.",
+      "Kirletici parçacıklar, en küçük kirleri de ayıran bir <b>filtre keki</b> oluşturur.",
+      "Süzülmüş sıvı, <b>temiz tanka</b> toplanır."
+    ]'>
+      <div class="badge">
+        <div class="group">Filtrasyon süreci</div>
+        <div class="step">01<small>/04</small></div>
+      </div>
+      <div class="text">Kirlenmiş sıvı, <b>giriş kutusundan</b> filtre teknesine yanlamasına akar.</div>
+    </div>
+  </main>
+
+  <script>
+    (function(){
+      const caption = document.querySelector('[data-caption]');
+      const steps = JSON.parse(caption.dataset.steps);
+      const step = caption.querySelector('.step');
+      const text = caption.querySelector('.text');
+      let index = 0;
+
+      function render() {
+        step.innerHTML = String(index + 1).padStart(2, '0') + '<small>/' + String(steps.length).padStart(2, '0') + '</small>';
+        text.innerHTML = steps[index];
+        index = (index + 1) % steps.length;
+      }
+
+      render();
+      setInterval(render, 4600);
+    })();
+  </script>
+
+</body></html>

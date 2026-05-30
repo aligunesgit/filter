@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Endüstriyel Filtrasyon Sistemleri</title>
+<style>
+:root {
+  --bg:      #071b36;
+  --bg2:     #0a2647;
+  --bg3:     #0d3572;
+  --bg4:     #0e2f5e;
+  --accent:  #4fa3d1;
+  --gold:    #efb022;
+  --text:    #dce8f5;
+  --muted:   #7fa5c8;
+  --border:  #1a406b;
+  --font:    "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --sidebar: 270px;
+  --radius:  6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.65;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ───────────────── SIDEBAR ───────────────── */
+.sidebar {
+  width: var(--sidebar);
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.brand {
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--accent);
+  line-height: 1.4;
+}
+
+.brand-sub {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.nav { padding: 10px 0 20px; }
+
+.nav-group {
+  padding: 14px 18px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 18px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.nav-link .tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(79, 163, 209, 0.12);
+  color: var(--accent);
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.nav-link:hover {
+  color: var(--text);
+  background: rgba(79, 163, 209, 0.07);
+  border-left-color: var(--border);
+}
+
+.nav-link.active {
+  color: var(--accent);
+  background: rgba(79, 163, 209, 0.12);
+  border-left-color: var(--accent);
+}
+
+.nav-link.active .tag {
+  background: rgba(79, 163, 209, 0.22);
+}
+
+/* ───────────────── MAIN ───────────────── */
+.main { flex: 1; min-width: 0; }
+
+/* ───────────────── SECTION ───────────────── */
+.filter-section {
+  padding: 48px 44px 52px;
+  border-bottom: 1px solid var(--border);
+  scroll-margin-top: 16px;
+}
+
+.filter-section:last-child { border-bottom: none; }
+
+/* ───────────────── HEADER ───────────────── */
+.sec-header { margin-bottom: 28px; }
+
+.sec-code {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(239, 176, 34, 0.1);
+  border: 1px solid rgba(239, 176, 34, 0.22);
+  padding: 2px 9px;
+  border-radius: 3px;
+  margin-bottom: 9px;
+}
+
+.sec-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e8f4ff;
+  letter-spacing: -0.01em;
+}
+
+/* ───────────────── DESCRIPTION GRID ───────────────── */
+.desc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.desc-grid.full { grid-template-columns: 1fr; }
+
+.desc-card {
+  background: var(--bg4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+.desc-card-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.desc-card ol {
+  padding-left: 18px;
+}
+
+.desc-card li {
+  font-size: 13.5px;
+  color: var(--text);
+  margin-bottom: 6px;
+  line-height: 1.55;
+}
+
+.desc-card li:last-child { margin-bottom: 0; }
+
+/* ───────────────── NO ANIMATION NOTICE ───────────────── */
+.no-anim {
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ───────────────── ANIMATION LABEL ───────────────── */
+.anim-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+/* ───────────────── IFRAME WRAPPERS ───────────────── */
+.iframe-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #0c3a6b;
+  margin-bottom: 20px;
+}
+
+.iframe-box:last-child { margin-bottom: 0; }
+
+/* Fixed height — for full-viewport animations */
+.iframe-box.h-fixed iframe {
+  display: block;
+  width: 100%;
+  height: 620px;
+  border: none;
+}
+
+.iframe-box.h-fixed.h-tall iframe {
+  height: 780px;
+}
+
+/* Aspect-ratio — for image/SVG-based animations */
+.iframe-box.ratio {
+  position: relative;
+}
+
+.iframe-box.ratio iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  border: none;
+  overflow: hidden;
+  display: block;
+}
+
+/* ───────────────── RESPONSIVE ───────────────── */
+@media (max-width: 960px) {
+  body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    padding: 14px 16px 10px;
+  }
+
+  .brand-title {
+    font-size: 11px;
+  }
+
+  .brand-sub {
+    display: none;
+  }
+
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px 12px 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .nav-group {
+    display: none;
+  }
+
+  .nav-link {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 4px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .nav-link:hover,
+  .nav-link.active {
+    border-left-color: transparent;
+    border-bottom-color: var(--accent);
+  }
+
+  .nav-link .tag {
+    font-size: 9px;
+  }
+
+  .main {
+    width: 100%;
+  }
+
+  .filter-section {
+    padding: 34px 22px 40px;
+    scroll-margin-top: 92px;
+  }
+
+  .desc-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  :root { --sidebar: 0px; }
+
+  body {
+    font-size: 13px;
+  }
+
+  .filter-section {
+    padding: 28px 14px 34px;
+  }
+
+  .sec-header {
+    margin-bottom: 18px;
+  }
+
+  .sec-title {
+    font-size: 19px;
+    line-height: 1.25;
+  }
+
+  .desc-grid {
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .desc-card {
+    padding: 14px 15px;
+  }
+
+  .desc-card li {
+    font-size: 12.5px;
+  }
+
+  .iframe-box.h-fixed iframe,
+  .iframe-box.h-fixed.h-tall iframe {
+    height: clamp(260px, 72vw, 520px);
+  }
+
+  .iframe-box.ratio {
+    padding-bottom: clamp(250px, 72vw, 520px) !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand {
+    padding: 12px 12px 8px;
+  }
+
+  .nav {
+    padding: 7px 10px 10px;
+  }
+
+  .nav-link {
+    gap: 6px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  .filter-section {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .iframe-box {
+    border-radius: 4px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════ SIDEBAR ══════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-title">Endüstriyel Filtrasyon Sistemleri</div>
+    <div class="brand-sub">Çalışma Prensipleri &amp; Animasyonlar</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-group">Kompakt Filtreler</div>
+    <a class="nav-link" href="#kf">
+      <span class="tag">KF</span>Kompakt Filtre (KF)
+    </a>
+    <a class="nav-link" href="#kfe">
+      <span class="tag">KF-E</span>Kompakt Filtre KF-E
+    </a>
+
+    <div class="nav-group">Vakum Filtreleri</div>
+    <a class="nav-link" href="#vlo">
+      <span class="tag">VLO</span>Vakum Filtre VLO
+    </a>
+    <a class="nav-link" href="#vrf">
+      <span class="tag">VRF</span>Vakum Rotasyon Filtresi
+    </a>
+
+    <div class="nav-group">Bant Filtreleri</div>
+    <a class="nav-link" href="#gravity">
+      <span class="tag">GB</span>Yerçekimi Bant Filtresi
+    </a>
+
+    <div class="nav-group">Genel</div>
+    <a class="nav-link" href="#filtrasyon">
+      <span class="tag">SIM</span>Filtrasyon Simülasyonu
+    </a>
+  </nav>
+</aside>
+
+<!-- ══════════════════════════════════ MAIN ══════════════════════════════════ -->
+<main class="main">
+
+  <!-- ────────────────── KF ────────────────── -->
+  <section class="filter-section" id="kf">
+    <div class="sec-header">
+      <div class="sec-code">KF</div>
+      <h2 class="sec-title">Kompakt Filtre (KF)</h2>
+    </div>
+
+    <div class="desc-grid">
+      <div class="desc-card">
+        <div class="desc-card-title">Filtrasyon Süreci</div>
+        <ol>
+          <li>Kirli sıvı, giriş kutusundan filtre teknesine yanlamasına akar</li>
+          <li>Filtre fleesi, sıvı geçerken kir parçacıklarını tutar</li>
+          <li>Kir parçacıkları, en küçük kirleticileri de ayıran bir filtre keki oluşturur</li>
+          <li>Temiz sıvı, temiz tanka toplanır</li>
+          <li>Düşük ve yüksek basınçlı pompalar, temizlenmiş KSS'yi takım tezgahına gerektiği gibi iletir</li>
+        </ol>
+      </div>
+      <div class="desc-card">
+        <div class="desc-card-title">Filtre Kayışı Rejenerasyonu</div>
+        <ol>
+          <li>Büyüyen filtre keki akış direncini artırır</li>
+          <li>Filtre teknesindeki sıvı seviyesi yükselir</li>
+          <li>Kayış tahrik sistemi belirli bir seviyede devreye girer (alternatif: zamanlı kontrol)</li>
+          <li>Taşıyıcı kayış, filtre yüzeyine temiz bir filtre fleesi taşır</li>
+          <li>Sıvı seviyesi tekrar düşer</li>
+          <li>Bir çamur konteyneri veya toplama ünitesi kirli filtre fleesini alır</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="anim-label">Animasyon</div>
+    <div class="iframe-box h-fixed">
+      <iframe src="simulasyon-1/Kompakt Filtre Animasyon.html"
+              title="Kompakt Filtre KF Animasyonu"
+              scrolling="no"
+              loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <!-- ────────────────── KF-E ────────────────── -->
+  <section class="filter-section" id="kfe">
+    <div class="sec-header">
+      <div class="sec-code">KF-E</div>
+      <h2 class="sec-title">Kompakt Filtre KF-E</h2>
+    </div>
+
+    <div class="desc-grid">
+      <div class="desc-card">
+        <div class="desc-card-title">Filtrasyon Süreci</div>
+        <ol>
+          <li>Kirlenmiş sıvı, giriş kutusundan filtre teknesine yanlamasına akar</li>
+          <li>Filtre fleesi, akış sırasında kirletici parçacıkları tutar</li>
+          <li>Kirletici parçacıklar, en küçük kir parçacıklarını bile ayıran bir filtre keki oluşturur</li>
+          <li>Süzülmüş sıvı temiz tanka toplanır</li>
+        </ol>
+      </div>
+      <div class="desc-card">
+        <div class="desc-card-title">Filtre Kayışı Rejenerasyonu</div>
+        <ol>
+          <li>Büyüyen filtre keki akış direncini artırır</li>
+          <li>Filtre teknesindeki sıvı seviyesi yükselir</li>
+          <li>Kayış tahrik sistemi belirli bir seviyede devreye girer (alternatif: zamanlı kontrol)</li>
+          <li>Taşıyıcı kayış, filtre yüzeyine temiz bir filtre kayışı taşır</li>
+          <li>Sıvı seviyesi tekrar düşer</li>
+          <li>Bir fırça ve geri yıkama düzeni filtre kayışını temizler</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="anim-label">Animasyon</div>
+    <div class="iframe-box ratio" style="padding-bottom: 67%;">
+      <iframe src="Compact Filter KF-E Simulation.html"
+              title="Kompakt Filtre KF-E Simülasyonu"
+              scrolling="no"
+              loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <!-- ────────────────── VLO ────────────────── -->
+  <section class="filter-section" id="vlo">
+    <div class="sec-header">
+      <div class="sec-code">VLO</div>
+      <h2 class="sec-title">Vakum Filtre VLO</h2>
+    </div>
+
+    <div class="desc-grid">
+      <div class="desc-card">
+        <div class="desc-card-title">Filtrasyon Süreci</div>
+        <ol>
+          <li>Bir kaldırma pompası atık sıvıyı giriş kutusuna pompalar</li>
+          <li>Temizlenen KSS, sürekli rulo üzerinden filtre haznesine ve ardından temiz tanka akar</li>
+          <li>Sürekli ruloda bir filtre keki oluşur; derin filtre olarak en ince kir parçacıklarını tutar</li>
+        </ol>
+      </div>
+      <div class="desc-card">
+        <div class="desc-card-title">Rejenerasyon Süreci</div>
+        <ol>
+          <li>Büyüyen filtre keki, filtre yüzeyindeki akış direncini artırır</li>
+          <li>Filtre haznesindeki vakum yükselir</li>
+          <li>Seviye belirli bir eşiğe ulaşınca kayış tahrik sistemi devreye girer ve ruloyu biraz ilerletir</li>
+          <li>Filtre kekisiz sürekli rulo filtre yüzeyine gelir; hacimsel akış tekrar artar</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="anim-label">Animasyon</div>
+    <div class="iframe-box ratio" style="padding-bottom: 69%;">
+      <iframe src="Vakum Filtre VLO Simülasyonu.html"
+              title="Vakum Filtre VLO Simülasyonu"
+              scrolling="no"
+              loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <!-- ────────────────── VRF ────────────────── -->
+  <section class="filter-section" id="vrf">
+    <div class="sec-header">
+      <div class="sec-code">VRF</div>
+      <h2 class="sec-title">Vakum Rotasyon Filtresi (VRF)</h2>
+    </div>
+
+    <div class="desc-grid">
+      <div class="desc-card">
+        <div class="desc-card-title">Filtrasyon Süreci</div>
+        <ol>
+          <li>Kirlenmiş sıvı, giriş kutusundan filtreye akar</li>
+          <li>Filtre pompası kirlenmiş sıvıyı filtre tamburunun içine çeker</li>
+          <li>Filtre tamburundaki filtre elemanı, sıvı geçerken kir parçacıklarını tutar</li>
+          <li>Kir parçacıkları, daha küçük parçacıkları da ayıran bir filtre keki oluşturur</li>
+          <li>Filtre pompası temizlenmiş sıvıyı tanka iletir</li>
+          <li>Düşük ve yüksek basınçlı pompalar, temizlenmiş soğutma yağını takım tezgahına iletir</li>
+        </ol>
+      </div>
+      <div class="desc-card">
+        <div class="desc-card-title">Rejenerasyon Süreci</div>
+        <ol>
+          <li>Büyüyen filtre keki akış direncini artırır; alçak basınç yükselir</li>
+          <li>Belirli bir alçak basınçta filtre tamburu döner ve geri yıkama pompası filtre kekini çözer</li>
+          <li>Kazıyıcı kayış çökelen çamuru filtreden çamur tankına taşır</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="anim-label">Animasyon</div>
+    <div class="iframe-box h-fixed h-tall">
+      <iframe src="simulasyon-7/VRF Diagram.html"
+              title="Vakum Rotasyon Filtresi VRF"
+              scrolling="no"
+              loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <!-- ────────────────── GRAVITY BELT ────────────────── -->
+  <section class="filter-section" id="gravity">
+    <div class="sec-header">
+      <div class="sec-code">Gravity Belt</div>
+      <h2 class="sec-title">Yerçekimi Bant Filtresi</h2>
+    </div>
+
+    <div class="desc-grid">
+      <div class="desc-card">
+        <div class="desc-card-title">Filtrasyon Süreci</div>
+        <ol>
+          <li>Kirlenmiş sıvı, giriş kutusundan filtre teknesine akar</li>
+          <li>Filtre fleesi, akış sırasında kirletici parçacıkları tutar</li>
+          <li>Kirletici parçacıklar, en küçük kir parçacıklarını bile ayıran bir filtre keki oluşturur</li>
+          <li>Süzülmüş sıvı, süzülmüş sıvı tankına toplanır</li>
+        </ol>
+      </div>
+      <div class="desc-card">
+        <div class="desc-card-title">Rejenerasyon Süreci</div>
+        <ol>
+          <li>Büyüyen filtre keki akış direncini artırır</li>
+          <li>Filtre teknesindeki sıvı seviyesi yükselir</li>
+          <li>Belirli bir seviyede kayış tahrik sistemi devreye girer (alternatif: zamanlı kontrol)</li>
+          <li>Taşıyıcı kayış, filtre yüzeyine temiz bir filtre fleesi taşır</li>
+          <li>Sıvı seviyesi tekrar düşer</li>
+          <li>Bir çamur konteyneri kirli filtre fleesini alır</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="anim-label">Animasyon</div>
+    <div class="iframe-box h-fixed h-tall">
+      <iframe src="gravity_belt_v2.html"
+              title="Yerçekimi Bant Filtresi Animasyonu"
+              scrolling="no"
+              loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <!-- ────────────────── FİLTRASYON SİMÜLASYONU ────────────────── -->
+  <section class="filter-section" id="filtrasyon">
+    <div class="sec-header">
+      <div class="sec-code">Genel</div>
+      <h2 class="sec-title">Filtrasyon Simülasyonu</h2>
+    </div>
+
+    <div class="anim-label">Animasyon</div>
+    <div class="iframe-box ratio" style="padding-bottom: 65.5%;">
+      <iframe src="Filtrasyon Simülasyonu.html"
+              title="Filtrasyon Simülasyonu"
+              scrolling="no"
+              loading="lazy"></iframe>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  const links = document.querySelectorAll('.nav-link[href^="#"]');
+  const sections = Array.from(document.querySelectorAll('.filter-section[id]'));
+
+  const setActive = (id) => {
+    links.forEach(l => {
+      l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+    });
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) setActive(e.target.id);
+    });
+  }, { rootMargin: '-20% 0px -60% 0px', threshold: 0 });
+
+  sections.forEach(s => observer.observe(s));
+
+  if (sections.length) setActive(sections[0].id);
+})();
+</script>
+
+</body>
+</html>
